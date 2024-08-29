@@ -1,0 +1,34 @@
+basePackage: org.lamisplus.modules.lims
+name: LimsModule
+dependencies: {PatientModule: 2.0.4, LaboratoryModule: 2.0.5 }
+menus:
+  - icon: fa fa-vial-virus
+    disabled: false
+    name: LIMS
+    state: lims
+    url: /across/resources/static/lims/index.html
+umdLocation: /across/resources/static/lims/index.html
+webModules:
+  - breadcrumb: LIMS
+    name: LimsModule
+    path: lims
+    position: 99
+permissions:
+  - name: create_manifest
+    description: create manifest
+    moduleName: LimsModule
+  - name: view_manifest
+    description: view manifest
+    moduleName: LimsModule
+  - name: print_manifest
+    description: print manifest
+    moduleName: LimsModule
+  - name: set_configuration
+    description: set configuration
+    moduleName: LimsModule
+  - name: view_result
+    description: view result
+    moduleName: LimsModule
+  - name: add_result
+    description: add result
+    moduleName: LimsModule

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="lims-20230515-0001" author="kennedy">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT count(column_name) as num FROM information_schema.columns
+                WHERE table_name='lims_result' and column_name='secondary_pcr_lab_id';
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            alter table lims_result add column IF NOT EXISTS secondary_pcr_lab_id character varying(255);
+            alter table lims_result add column IF NOT EXISTS secondary_pcr_lab_name character varying(255);
+            alter table lims_result add column IF NOT EXISTS date_transferred_out character varying(255);
+            alter table lims_result add column IF NOT EXISTS rejection_reason character varying(255);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
