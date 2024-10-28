@@ -402,8 +402,14 @@ public class LimsManifestService {
      }
 
     public  AllManifestDto getSingleSampleInformationBySampleId(String sampleId){
+        String manifestSampleId = null;
+        if (sampleId.contains("_")) {
+            manifestSampleId = sampleId.replace("_", "/");
+        }else {
+            manifestSampleId = sampleId;
+        }
         AllManifestDto allManifestDto = new AllManifestDto();
-        Optional<LIMSSample>  limsSamples = sampleRepository.findLIMSSampleBySampleID(sampleId);
+        Optional<LIMSSample> limsSamples = sampleRepository.findLIMSSampleBySampleID(manifestSampleId);
         if(limsSamples.isPresent())
         {
             LIMSSample limsSample = limsSamples.get();

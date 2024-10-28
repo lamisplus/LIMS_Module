@@ -17,6 +17,7 @@ public interface LimsResultRepository extends JpaRepository<LIMSResult, Integer>
     List<LIMSResult> findAllByManifestRecordID(Integer id);
     List<LIMSResult> findAllBySampleID(String sampleId);
 
+    @Query(value="SELECT * FROM lims_result WHERE sample_id = ?1", nativeQuery = true)
     Optional<LIMSResult> getLIMSResultBySampleID(String sampleId);
 
     @Transactional

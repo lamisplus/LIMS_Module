@@ -40,4 +40,9 @@ public class LimsResultController {
     public ManifestDTO GetResultByManifestId(@PathVariable int id){
         return limsResultService.FindResultsByManifestId(id);
     }
+
+    @GetMapping("/sample/result/{sampleId}")
+    public LIMSResult GetResultBySampleId(@PathVariable String sampleId){
+        return limsResultService.getSampleResultBySampleId(sampleId);
+    }
 }

@@ -103,4 +103,19 @@ public class LimsResultService {
             LOG.info("ERROR SAVING RESULT IN LAB MODULE: " + exception.getMessage());
         }
     }
+
+    public LIMSResult getSampleResultBySampleId(String sampleId) {
+        String manifestSampleId = null;
+        if (sampleId.contains("_")) {
+            manifestSampleId = sampleId.replace("_", "/");
+        }else {
+            manifestSampleId = sampleId;
+        }
+        if (resultRepository.getLIMSResultBySampleID(manifestSampleId).isPresent()) {
+            System.out.println(manifestSampleId);
+            return resultRepository.getLIMSResultBySampleID(manifestSampleId).get();
+        }
+       return null;
+    }
+
 }
