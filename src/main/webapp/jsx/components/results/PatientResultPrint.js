@@ -107,7 +107,7 @@ const PatientResultPrint = (props) => {
         `${url}lims/manifest-samples-info-by-sampleid/${manifestSampleId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(response);
+      //console.log(response);
       setPatientInfo(response.data);
     } catch (e) {
       console.err(e);

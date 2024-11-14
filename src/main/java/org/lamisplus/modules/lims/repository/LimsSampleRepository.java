@@ -50,4 +50,5 @@ public interface LimsSampleRepository extends JpaRepository<LIMSSample, Integer>
     Page<LIMSSample> findPendingVLSamples(Long facilityId, Pageable pageable);
 
     Optional<LIMSSample> findLIMSSampleBySampleID(String sampleId);
+
 }
