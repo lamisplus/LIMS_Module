@@ -146,45 +146,45 @@ const SampleSearch = (props) => {
   const handleSampleChanges = (sample) => {
     let samples = [];
 
-    uniq(sample)
-      .sort(
-        (a, b) => a.sampleId?.replace("/", "") > b.sampleId.replace("/", "")
-      )
-      .map((item) => {
-        samples.push({
-          patientID: [
-            {
-              idNumber: item.patientId,
-              idTypeCode: item.typecode,
-            },
-          ],
-          firstName: item.firstname,
-          surName: item.surname,
-          sex: item.sex === "M" ? "Male" : "Female",
-          pregnantBreastFeedingStatus: "",
-          age: 0,
-          dateOfBirth: item.dob,
-          age: item.age,
-          sampleID: item.sampleId,
-          sampleType: item.sampleType,
-          indicationVLTest: 1,
-          artCommencementDate: "",
-          drugRegimen: "",
-          sampleOrderedBy: item.orderby,
-          sampleOrderDate: item.orderbydate,
-          sampleCollectedBy: item.collectedby,
-          sampleCollectionDate: item.datecollected,
-          sampleCollectionTime: item.timecollected,
-          dateSampleSent: format(new Date(), "yyyy-MM-dd"),
-          id: 0,
-          manifestID: 0,
-          pid: 0,
-          priority: 0,
-        });
+    uniq(sample).map((item) => {
+      samples.push({
+        patientID: [
+          {
+            idNumber: item.patientId,
+            idTypeCode: item.typecode,
+          },
+        ],
+        firstName: item.firstname,
+        surName: item.surname,
+        sex: item.sex === "M" ? "Male" : "Female",
+        pregnantBreastFeedingStatus: "",
+        age: 0,
+        dateOfBirth: item.dob,
+        age: item.age,
+        sampleID: item.sampleId,
+        sampleType: item.sampleType,
+        indicationVLTest: 1,
+        artCommencementDate: "",
+        drugRegimen: "",
+        sampleOrderedBy: item.orderby,
+        sampleOrderDate: item.orderbydate,
+        sampleCollectedBy: item.collectedby,
+        sampleCollectionDate: item.datecollected,
+        sampleCollectionTime: item.timecollected,
+        dateSampleSent: format(new Date(), "yyyy-MM-dd"),
+        id: 0,
+        manifestID: 0,
+        pid: 0,
+        priority: 0,
       });
+    });
 
     //console.log("sampless", samples);
-
+    samples = samples.sort((a, b) => {
+      let numA = parseInt(a.sampleID?.split("/")[0]);
+      let numB = parseInt(b.sampleID?.split("/")[0]);
+      return numA - numB;
+    });
     localStorage.setItem("samples", JSON.stringify(samples));
   };
 
@@ -250,7 +250,7 @@ const SampleSearch = (props) => {
                 title: "Test Type",
                 field: "testType",
               },
-              { title: "Sample ID", field: "sampleId" },
+              { title: "Phlebotomy No", field: "sampleId" },
               {
                 title: "Sample Type",
                 field: "sampleType",

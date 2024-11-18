@@ -248,10 +248,10 @@ const Result = (props) => {
       sampleNumber: sampleData.sampleNumber,
       sampleCollectionDate: sampleData.sampleCollectionDate,
       sampleCollectedBy: sampleData.sampleCollectedBy,
-      dateResultReceived: sampleData.dateResultReceived,
+      dateResultReceived: `${result.dateResultDispatched} 00:00:00`,
       result: result.testResult,
       resultReportedBy: sampleData.resultReportedBy,
-      dateResultReported: sampleData.dateResultReported,
+      dateResultReported: `${result.dateResultDispatched} 00:00:00`,
       checkedBy: sampleData.checkedBy,
       dateChecked: sampleData.dateChecked,
       comments: sampleData.comments,
@@ -289,7 +289,7 @@ const Result = (props) => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
-        console.log(res);
+        //console.log(res);
         setPercentage(100);
       })
       .then((rep) => setPercentage(0));
