@@ -9,6 +9,7 @@ import org.lamisplus.modules.lims.domain.mapper.LimsMapper;
 import org.lamisplus.modules.lims.repository.LimsManifestRepository;
 import org.lamisplus.modules.lims.repository.LimsResultRepository;
 import org.lamisplus.modules.lims.repository.LimsTestRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -103,4 +104,30 @@ public class LimsResultService {
             LOG.info("ERROR SAVING RESULT IN LAB MODULE: " + exception.getMessage());
         }
     }
+
+    public LIMSResult getSampleResultBySampleId(String sampleId) {
+        String manifestSampleId = null;
+        if (sampleId.contains("_")) {
+            manifestSampleId = sampleId.replace("_", "/");
+        }else {
+            manifestSampleId = sampleId;
+        }
+        if (resultRepository.getLIMSResultBySampleID(manifestSampleId).isPresent()) {
+            System.out.println(manifestSampleId);
+            return resultRepository.getLIMSResultBySampleID(manifestSampleId).get();
+        }
+       return null;
+    }
+
+    public LIMSTest getPatientIDBySampleID(@Param("sampleId") String sampleId) {
+        String manifestSampleId = null;
+        if (sampleId.contains("_")) {
+            manifestSampleId = sampleId.replace("_", "/");
+        }else {
+            manifestSampleId = sampleId;
+        }
+        return testRepository.findBySampleId(manifestSampleId).get(0);
+    }
+
+
 }

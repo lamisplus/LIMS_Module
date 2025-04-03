@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lamisplus.modules.lims.domain.dto.ManifestDTO;
 import org.lamisplus.modules.lims.domain.entity.LIMSResult;
+import org.lamisplus.modules.lims.domain.entity.LIMSTest;
 import org.lamisplus.modules.lims.service.LimsResultService;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,5 +40,15 @@ public class LimsResultController {
     @GetMapping("/results/manifests/{id}")
     public ManifestDTO GetResultByManifestId(@PathVariable int id){
         return limsResultService.FindResultsByManifestId(id);
+    }
+
+    @GetMapping("/sample/result/{sampleId}")
+    public LIMSResult GetResultBySampleId(@PathVariable String sampleId){
+        return limsResultService.getSampleResultBySampleId(sampleId);
+    }
+
+    @GetMapping("/results/sample/{sampleId}")
+    public LIMSTest GetPatientIDBySampleId(@PathVariable String sampleId){
+        return limsResultService.getPatientIDBySampleID(sampleId);
     }
 }

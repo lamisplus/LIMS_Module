@@ -60,7 +60,6 @@ const tableIcons = {
 };
 
 const SampleSearch = (props) => {
-  const [loading, setLoading] = useState("");
   const [collectedSamples, setCollectedSamples] = useState([]);
   const [manifestData, setManifestData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,12 +77,10 @@ const SampleSearch = (props) => {
       });
       //console.log("configs", response);
       setConfig(response.data);
-      setLoading(false);
     } catch (e) {
       toast.error("An error occurred while fetching config details", {
         position: toast.POSITION.TOP_RIGHT,
       });
-      setLoading(false);
     }
   }, []);
 
@@ -93,11 +90,10 @@ const SampleSearch = (props) => {
         `${url}lims/collected-samples/?searchParam=*&pageNo=0&pageSize=100`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      //console.log("samples", response);
+
       if (response.data.records === null) {
       } else {
         setCollectedSamples(response.data.records);
-        setLoading(false);
       }
 
       localStorage.removeItem("samples");
@@ -106,7 +102,6 @@ const SampleSearch = (props) => {
       toast.error("An error occurred while fetching lab samples data", {
         position: toast.POSITION.TOP_RIGHT,
       });
-      setLoading(false);
     }
   }, []);
 
@@ -127,17 +122,14 @@ const SampleSearch = (props) => {
         });
       }
       setManifestData(arr);
-      setLoading(false);
     } catch (e) {
       toast.error("An error occurred while fetching manifest data", {
         position: toast.POSITION.TOP_RIGHT,
       });
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    setLoading("true");
     loadManifestData();
     loadLabTestData();
     loadConfig();
@@ -154,7 +146,7 @@ const SampleSearch = (props) => {
   const handleSampleChanges = (sample) => {
     let samples = [];
 
-    let uniqueSamples = uniq(sample).map((item) => {
+    uniq(sample).map((item) => {
       samples.push({
         patientID: [
           {
@@ -187,20 +179,26 @@ const SampleSearch = (props) => {
       });
     });
 
+    //console.log("sampless", samples);
+    samples = samples.sort((a, b) => {
+      let numA = parseInt(a.sampleID?.split("/")[0]);
+      let numB = parseInt(b.sampleID?.split("/")[0]);
+      return numA - numB;
+    });
     localStorage.setItem("samples", JSON.stringify(samples));
   };
 
-  const sampleFilter = (collectedSamples, manifestData) => {
-    if (collectedSamples && manifestData) {
-      return collectedSamples.filter((x) => {
-        return !manifestData.some((y) => {
-          return x.sampleID === y.sampleID;
-        });
-      });
-    }
-  };
+  // const sampleFilter = (collectedSamples, manifestData) => {
+  //   if (collectedSamples && manifestData) {
+  //     return collectedSamples.filter((x) => {
+  //       return !manifestData.some((y) => {
+  //         return x.sampleID === y.sampleID;
+  //       });
+  //     });
+  //   }
+  // };
 
-  const values = sampleFilter(collectedSamples, manifestData);
+  // const values = sampleFilter(collectedSamples, manifestData);
   const handleChangePage = (page) => {
     setCurrentPage(page + 1);
   };
@@ -213,14 +211,6 @@ const SampleSearch = (props) => {
 
   return (
     <div>
-      {/* {collectedSamples.length <= 0 ? (
-        <p>
-          {" "}
-          <Spinner color="primary" /> loading Patient Samples...
-        </p>
-      ) : (
-        " "
-      )} */}
       <Card>
         <Card.Body>
           <Grid container spacing={2}>
@@ -260,7 +250,7 @@ const SampleSearch = (props) => {
                 title: "Test Type",
                 field: "testType",
               },
-              { title: "Sample ID", field: "sampleId" },
+              { title: "Phlebotomy No", field: "sampleId" },
               {
                 title: "Sample Type",
                 field: "sampleType",
@@ -286,8 +276,7 @@ const SampleSearch = (props) => {
                 hidden: true,
               },
             ]}
-            isLoading={loading}
-            // data={handlePulledData}
+            isLoading={collectedSamples.length > 0 ? false : true}
             data={collectedSamples
               .filter((row) => {
                 let filterPass = true;

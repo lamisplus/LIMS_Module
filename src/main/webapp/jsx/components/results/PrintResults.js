@@ -59,6 +59,12 @@ const sampleStatus = (e) => {
   }
 };
 
+const print = {
+  width: "100%",
+  borderCollapse: "collapse",
+  fontFamily: "Arial",
+};
+
 class PrintResults extends React.Component {
   render() {
     const { manifestObj, results } = this.props;
@@ -69,7 +75,7 @@ class PrintResults extends React.Component {
           <h3 style={{ textAlign: "center" }}>NISRN SAMPLE RESULTS</h3>
           <hr />
           <Row>
-            <Table bordered size="sm" responsive>
+            <Table bordered size="sm" responsive style={print}>
               <tbody>
                 <tr>
                   <th scope="row">ManifestID:</th>
@@ -102,7 +108,7 @@ class PrintResults extends React.Component {
               </tbody>
             </Table>
             <br />
-            <Table striped bordered size="sm">
+            <Table striped bordered size="sm" style={print}>
               <tbody>
                 <tr style={{ backgroundColor: "#014d88", color: "#fff" }}>
                   <th>Sample ID</th>
