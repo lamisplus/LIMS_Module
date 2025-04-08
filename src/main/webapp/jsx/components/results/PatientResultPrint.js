@@ -85,7 +85,7 @@ const PatientResultPrint = (props) => {
 
   const patientResults = location && location.state ? location.state.data : {};
 
-  console.log(patientResults);
+  //console.log(patientResults);
 
   const [patientInfo, setPatientInfo] = useState({});
 
@@ -99,9 +99,9 @@ const PatientResultPrint = (props) => {
     let manifestSampleId = null;
     try {
       if (patientResults?.sampleID?.includes("/")) {
-        manifestSampleId = patientResults?.sampleID?.replace("/", "_");
+        manifestSampleId = patientResults?.sampleID?.replace(/\//g, "-");
       } else {
-        manifestSampleId = patientResults.sampleID;
+        manifestSampleId = patientResults?.sampleID;
       }
       const response = await axios.get(
         `${url}lims/manifest-samples-info-by-sampleid/${manifestSampleId}`,

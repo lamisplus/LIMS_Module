@@ -8,11 +8,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import "./result.css";
 import { logo } from "../SampleCollection/pcr";
 
-import {
-  Card,
-  CardBody,
-  Table,
-} from "reactstrap";
+import { Card, CardBody, Table } from "reactstrap";
 
 let today = new Date().toLocaleDateString("en-us", {
   weekday: "long",
@@ -22,79 +18,81 @@ let today = new Date().toLocaleDateString("en-us", {
 });
 
 const print = {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontFamily: "Arial",
-    textAlign: "left",
-}
+  width: "100%",
+  borderCollapse: "collapse",
+  fontFamily: "Arial",
+  textAlign: "left",
+};
 
 class PatientResult extends React.Component {
   render() {
     const { samples } = this.props;
-    console.log(samples);
+    //console.log(samples);
 
-  const transferStatus = (e) => {
-    //console.log(e)
-    if (parseInt(e) === 1) {
-      return (
-        <p>
-          <Badge color="info">Not Transafered</Badge>
-        </p>
-      );
-    } else if (parseInt(e) === 2) {
-      return (
-        <p>
-          <Badge color="info">Received</Badge>
-        </p>
-      );
-    } else if (parseInt(e) === 3) {
-      return (
-        <p>
-          <Badge color="info">In-Progress</Badge>
-        </p>
-      );
-    } else if (parseInt(e) === 4) {
-      return (
-        <p>
-          <Badge color="warning">Tested</Badge>
-        </p>
-      );
-    } else {
-      return (
-        <p>
-          <Badge color="dark">None</Badge>
-        </p>
-      );
-    }
-  };
+    const transferStatus = (e) => {
+      //console.log(e)
+      if (parseInt(e) === 1) {
+        return (
+          <p>
+            <Badge color="info">Not Transafered</Badge>
+          </p>
+        );
+      } else if (parseInt(e) === 2) {
+        return (
+          <p>
+            <Badge color="info">Received</Badge>
+          </p>
+        );
+      } else if (parseInt(e) === 3) {
+        return (
+          <p>
+            <Badge color="info">In-Progress</Badge>
+          </p>
+        );
+      } else if (parseInt(e) === 4) {
+        return (
+          <p>
+            <Badge color="warning">Tested</Badge>
+          </p>
+        );
+      } else {
+        return (
+          <p>
+            <Badge color="dark">None</Badge>
+          </p>
+        );
+      }
+    };
 
     return (
       <Card>
         <CardBody>
           <Row>
-            <Table size="sm" style={ print }>
+            <Table size="sm" style={print}>
               <tbody>
                 <tr>
                   <th scope="row"></th>
                   <th scope="row"></th>
                   <th scope="row"></th>
                   <th scope="row">
-                    <h2 className="text-center">
-                      NISRN VIRAL LOAD RESULT
-                    </h2>
+                    <h2 className="text-center">NISRN VIRAL LOAD RESULT</h2>
                   </th>
 
                   <th scope="row">
-                     <img src={logo} style={{ width: "80px", height: "80px" }} alt=""/>
+                    <img
+                      src={logo}
+                      style={{ width: "80px", height: "80px" }}
+                      alt=""
+                    />
                   </th>
                 </tr>
               </tbody>
             </Table>
           </Row>
           <Row>
-            <Table bordered size="sm" responsive style={ print }>
+            <Table bordered size="sm" responsive style={print}>
               <tbody>
-                 <tr>
+                <tr>
                   <th scope="row">Manifest Id:</th>
                   <td>{samples.manifestID}</td>
                   <th scope="row">Patient Name:</th>
@@ -102,11 +100,15 @@ class PatientResult extends React.Component {
                   <th scope="row">Gender:</th>
                   <td>{samples.sex === "M" ? "Male" : "Female"}</td>
                 </tr>
-                 <tr>
+                <tr>
                   <th scope="row">Age:</th>
                   <td>{samples.age}</td>
                   <th scope="row">Client Unique No:</th>
-                  <td>{Object.keys(samples).length !== 0 ? samples.patientID[0].idNumber : ""}</td>
+                  <td>
+                    {Object.keys(samples).length !== 0
+                      ? samples.patientID[0].idNumber
+                      : ""}
+                  </td>
                   <th scope="row">Facility Name:</th>
                   <td>{samples.sendingFacilityName}</td>
                 </tr>
@@ -144,7 +146,7 @@ class PatientResult extends React.Component {
               </tbody>
             </Table>
             <br />
-            <Table striped bordered size="sm" style={ print }>
+            <Table striped bordered size="sm" style={print}>
               <tbody>
                 <tr style={{ backgroundColor: "#014d88", color: "#fff" }}>
                   <th>Transferred Out Date</th>
@@ -155,7 +157,11 @@ class PatientResult extends React.Component {
                 </tr>
                 {
                   <tr>
-                    <td>{samples.dateTransferredOut !== null ? samples.dateTransferredOut : "None"}</td>
+                    <td>
+                      {samples.dateTransferredOut !== null
+                        ? samples.dateTransferredOut
+                        : "None"}
+                    </td>
                     <td>{transferStatus(samples.transferStatus)}</td>
                     <td>{samples.dateResultDispatched}</td>
                     <td>{samples.pcrLabSampleNumber}</td>
@@ -172,17 +178,26 @@ class PatientResult extends React.Component {
             <br />
             <br />
             <br />
-            <Table bordered size="sm" responsive style={ print }>
+            <Table bordered size="sm" responsive style={print}>
               <tbody>
-                 <tr>
-                  <th scope="row">Tested by: {samples.testedBy}<br />
-                  Date: {samples.dateResultDispatched}</th>
-                   <td scope="row"></td>
-                  <th scope="row">Approved by: {samples.approvedBy}<br />
-                    Date: {samples.approvalDate}</th>
+                <tr>
+                  <th scope="row">
+                    Tested by: {samples.testedBy}
+                    <br />
+                    Date: {samples.dateResultDispatched}
+                  </th>
                   <td scope="row"></td>
-                  <th scope="row">Reviewed by:<br />
-                    Date: {today}</th>
+                  <th scope="row">
+                    Approved by: {samples.approvedBy}
+                    <br />
+                    Date: {samples.approvalDate}
+                  </th>
+                  <td scope="row"></td>
+                  <th scope="row">
+                    Reviewed by:
+                    <br />
+                    Date: {today}
+                  </th>
                   <th scope="row">Signature</th>
                 </tr>
               </tbody>

@@ -63,6 +63,9 @@ public class LimsManifestController {
 
     @GetMapping("/manifest-samples-info-by-sampleid/{sampleId}")
     public AllManifestDto getSamplesInformationBySampleId(@PathVariable String sampleId) {
+        if(sampleId.contains("-")) {
+            sampleId = sampleId.replace("-", "/");
+        }
         return limsManifestService.getSingleSampleInformationBySampleId(sampleId);
     }
 }

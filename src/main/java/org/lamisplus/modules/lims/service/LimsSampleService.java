@@ -120,7 +120,7 @@ public class LimsSampleService {
             sampleDTO.setSurName(personResponseDTO.getSurname());
             sampleDTO.setIndicationVLTest("1");
             sampleDTO.setPregnantBreastFeedingStatus("");
-            sampleDTO.setSex("M");
+//            sampleDTO.setSex("M");
         }
 
         return sampleDTOS;

@@ -44,11 +44,17 @@ public class LimsResultController {
 
     @GetMapping("/sample/result/{sampleId}")
     public LIMSResult GetResultBySampleId(@PathVariable String sampleId){
+        if(sampleId.contains("-")) {
+            sampleId = sampleId.replace("-", "/");
+        }
         return limsResultService.getSampleResultBySampleId(sampleId);
     }
 
     @GetMapping("/results/sample/{sampleId}")
     public LIMSTest GetPatientIDBySampleId(@PathVariable String sampleId){
+        if(sampleId.contains("-")) {
+            sampleId = sampleId.replace("-", "/");
+        }
         return limsResultService.getPatientIDBySampleID(sampleId);
     }
 }
