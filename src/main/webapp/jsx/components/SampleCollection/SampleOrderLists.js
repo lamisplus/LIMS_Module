@@ -179,26 +179,22 @@ const SampleSearch = (props) => {
       });
     });
 
-    //console.log("sampless", samples);
+    // samples = samples.sort((a, b) => {
+    //   let numA = parseInt(a.sampleID?.split("/")[0]);
+    //   let numB = parseInt(b.sampleID?.split("/")[0]);
+    //   return numA - numB;
+    // });
+
     samples = samples.sort((a, b) => {
-      let numA = parseInt(a.sampleID?.split("/")[0]);
-      let numB = parseInt(b.sampleID?.split("/")[0]);
-      return numA - numB;
+      const [numA, denA] = a.sample?.split("/").map(Number);
+      const [numB, denB] = b.sample?.split("/").map(Number);
+      if (numA !== numB) return numA - numB;
+      return denA - denB;
     });
+
     localStorage.setItem("samples", JSON.stringify(samples));
   };
 
-  // const sampleFilter = (collectedSamples, manifestData) => {
-  //   if (collectedSamples && manifestData) {
-  //     return collectedSamples.filter((x) => {
-  //       return !manifestData.some((y) => {
-  //         return x.sampleID === y.sampleID;
-  //       });
-  //     });
-  //   }
-  // };
-
-  // const values = sampleFilter(collectedSamples, manifestData);
   const handleChangePage = (page) => {
     setCurrentPage(page + 1);
   };
