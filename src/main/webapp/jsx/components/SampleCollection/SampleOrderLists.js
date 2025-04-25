@@ -75,7 +75,6 @@ const SampleSearch = (props) => {
       const response = await axios.get(`${url}lims/configs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      //console.log("configs", response);
       setConfig(response.data);
     } catch (e) {
       toast.error("An error occurred while fetching config details", {
@@ -143,10 +142,14 @@ const SampleSearch = (props) => {
     return age_now;
   };
 
-  const handleSampleChanges = (sample) => {
-    let samples = [];
 
-    uniq(sample).map((item) => {
+  const handleSampleChanges = (sample) => {
+    if (!Array.isArray(sample)) {
+      return;
+    }
+    let samples = [];
+    // Process unique items
+    uniq(sample).forEach((item) => {
       samples.push({
         patientID: [
           {
@@ -158,9 +161,8 @@ const SampleSearch = (props) => {
         surName: item.surname,
         sex: item.sex,
         pregnantBreastFeedingStatus: "",
-        age: 0,
+        age: item.age, // Removed duplicate key
         dateOfBirth: item.dob,
-        age: item.age,
         sampleID: item.sampleId,
         sampleType: item.sampleType,
         indicationVLTest: 1,
@@ -179,19 +181,15 @@ const SampleSearch = (props) => {
       });
     });
 
-    // samples = samples.sort((a, b) => {
-    //   let numA = parseInt(a.sampleID?.split("/")[0]);
-    //   let numB = parseInt(b.sampleID?.split("/")[0]);
-    //   return numA - numB;
-    // });
-
+    // Sort the samples array by sampleID
     samples = samples.sort((a, b) => {
-      const [numA, denA] = a.sample?.split("/").map(Number);
-      const [numB, denB] = b.sample?.split("/").map(Number);
+      const [numA, denA] = a.sampleID.split("/").map(Number);
+      const [numB, denB] = b.sampleID.split("/").map(Number);
       if (numA !== numB) return numA - numB;
       return denA - denB;
     });
 
+    // Store the samples in localStorage
     localStorage.setItem("samples", JSON.stringify(samples));
   };
 
