@@ -179,17 +179,10 @@ const SampleSearch = (props) => {
       });
     });
 
-    // samples = samples.sort((a, b) => {
-    //   let numA = parseInt(a.sampleID?.split("/")[0]);
-    //   let numB = parseInt(b.sampleID?.split("/")[0]);
-    //   return numA - numB;
-    // });
-
     samples = samples.sort((a, b) => {
-      const [numA, denA] = a.sample?.split("/").map(Number);
-      const [numB, denB] = b.sample?.split("/").map(Number);
-      if (numA !== numB) return numA - numB;
-      return denA - denB;
+      const [numA, denA] = a.sampleID?.split("/").map(Number);
+      const [numB, denB] = b.sampleID?.split("/").map(Number);
+      return numA !== numB ? numA - numB : denA - denB;
     });
 
     localStorage.setItem("samples", JSON.stringify(samples));
