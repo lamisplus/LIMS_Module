@@ -38,5 +38,7 @@ public class LIMSResultDTO {
     private String Secondary_PCR_Lab_Name;
     private String Date_Transferred_Out;
     private String rejectionReason;
+
+    private Integer testID;
 }
 

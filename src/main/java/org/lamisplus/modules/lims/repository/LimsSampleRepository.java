@@ -15,6 +15,7 @@ public interface LimsSampleRepository extends JpaRepository<LIMSSample, Integer>
     //List<LIMSSample> findAllByManifestRecordIDAndSendingFacilityID(Integer id, S)
     @Query(value = "select c.id, '0' as manifest_record_id\n" +
             "            , c.sample_number as sample_id\n" +
+            "\t\t\t, c.test_id\n" +
             "            , c.uuid\n" +
             "            , a.patient_id as pid\n" +
             "            , null as patient_id\n" +
@@ -43,10 +44,10 @@ public interface LimsSampleRepository extends JpaRepository<LIMSSample, Integer>
             "            inner join laboratory_sample c on b.id=c.test_id\n" +
             "            inner join laboratory_labtest d on b.lab_test_id=d.id\n" +
             "            inner join laboratory_sample_type e on c.sample_type_id = e.id\n" +
-            "\t\t\tinner join patient_person p on p.id = a.patient_id\n" +
+            "            inner join patient_person p on p.id = a.patient_id\n" +
             "            left join base_application_codeset f on b.viral_load_indication = f.id\n" +
             "            where d.lab_test_name='Viral Load' \n" +
-            "\t\t\tand a.facility_id=?1\n" +
+            "            and a.facility_id=?1\n" +
             "            and b.lab_test_order_status in (1,2,3)\n" +
             "            and c.sample_number not in (select x.sample_id from lims_sample x) ", nativeQuery = true)
     Page<LIMSSample> findPendingVLSamples(Long facilityId, Pageable pageable);

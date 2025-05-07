@@ -36,11 +36,12 @@ public class LimsResultService {
 
         if(limsResults.size() == 0) {
             if(result.getTestResult().length() > 0) {
-                LOG.info("1. RESULT: " + result);
+//                LOG.info("1. RESULT: " + result);
                 result.setUuid(UUID.randomUUID().toString());
                 SaveResultInLabModule(result);
                 LOG.info("SAVING RESULT: Result saved successfully in Lab Module");
                 return resultRepository.save(result);
+                //return null;
             }
             else{
                 LOG.info("SAVING RESULT: Result not saved, object has no result value");
@@ -86,23 +87,73 @@ public class LimsResultService {
 
     public void SaveResultInLabModule(LIMSResult result){
         try {
-            LIMSTest test = testRepository.findBySampleId(result.getSampleID()).get(0);
-            LOG.info("LAB TEST: " + test);
+            LIMSTest test = null;
+            boolean testIdExists = false;
+
+            if (result.getTestID() != null) {
+                test = testRepository.findByTestId(result.getTestID());
+                LOG.info("LAB TEST: " + test);
+                testIdExists = testRepository.findResultByTestId(result.getTestID());
+            }else{
+                test = testRepository.findBySampleId(result.getSampleID()).get(0);
+                LOG.info("LAB SAMPLE TEST: " + test);
+            }
+
+            String testResult = result.getTestResult();
+
+            testResult = extractCopyNumber(testResult);
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            if (testIdExists) {
+                LOG.info("UPDATING RESULT: ");
+                resultRepository.updateSampleResultByTestAndPatient(
+                        LocalDateTime.parse(result.getAssayDate()+ " 00:00:00", formatter),
+                        LocalDateTime.parse(result.getDateResultDispatched()+ " 00:00:00", formatter),
+                        LocalDateTime.now(),
+                        testResult,
+                        test.getId(),
+                        test.getPatientUuid()
+                );
+            }else {
+                LOG.info("SAVING RESULT: ");
             resultRepository.SaveSampleResult(UUID.randomUUID().toString(),
                     LocalDateTime.parse(result.getAssayDate()+" 00:00:00", formatter),
                     LocalDateTime.parse(result.getDateResultDispatched()+" 00:00:00", formatter),
                     LocalDateTime.now(),
-                    result.getTestResult(),
+                    testResult,
                     test.getId(),
                     test.getPatientUuid(),
                     Math.toIntExact(test.getFacilityId()),
                     test.getPatientId());
+
+            }
             resultRepository.UpdateTestStatus(test.getId());
         }catch (Exception exception) {
             LOG.info("ERROR SAVING RESULT IN LAB MODULE: " + exception.getMessage());
         }
+    }
+
+    public static String extractCopyNumber(String resultString) {
+        if(resultString != null && resultString.equalsIgnoreCase("NotDetected")){
+            resultString = "0";
+            return resultString;
+
+        }
+        if (resultString == null || resultString.isEmpty()) {
+            return null;
+        }
+        StringBuilder numericPart = new StringBuilder();
+        for (int i = 0; i < resultString.length(); i++) {
+            char c = resultString.charAt(i);
+            if (Character.isDigit(c)) {
+                numericPart.append(c);
+            }
+        }
+        if (numericPart.length() == 0) {
+            return null;
+        }
+        return numericPart.toString();
     }
 
     public LIMSResult getSampleResultBySampleId(String sampleId) {

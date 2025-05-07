@@ -38,4 +38,20 @@ public interface LimsResultRepository extends JpaRepository<LIMSResult, Integer>
     @Modifying
     @Query(value="update laboratory_test set lab_test_order_status=5 where id=:test_id ", nativeQuery = true)
     void UpdateTestStatus(@Param("test_id") int testId);
+
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE laboratory_result " +
+            "SET date_assayed = :date_assayed, " +
+            "    date_result_reported = :date_result_reported, " +
+            "    date_result_received = :date_result_received, " +
+            "    result_reported = :result_reported " +
+            "WHERE test_id = :test_id AND patient_uuid = :patient_uuid", nativeQuery = true)
+    void updateSampleResultByTestAndPatient(
+                                            @Param("date_assayed") LocalDateTime dateAssayed,
+                                            @Param("date_result_reported") LocalDateTime dateResultReported,
+                                            @Param("date_result_received") LocalDateTime dateResultReceived,
+                                            @Param("result_reported") String resultReported,
+                                            @Param("test_id") int testId,
+                                            @Param("patient_uuid") String patientUuid );
 }

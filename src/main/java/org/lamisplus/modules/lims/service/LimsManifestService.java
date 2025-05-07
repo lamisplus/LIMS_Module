@@ -1,6 +1,7 @@
 package org.lamisplus.modules.lims.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -84,6 +85,20 @@ public class LimsManifestService {
 
             for(LIMSSample sample: manifest.getSampleInformation()){
                 sample.setUuid(UUID.randomUUID().toString());
+                JsonNode patientIDs = sample.getPatientID();
+                String testID = null;
+
+                if (patientIDs != null && patientIDs.isArray()) {
+                    for (int i = 0; i < patientIDs.size(); i++) {
+                        JsonNode entry = patientIDs.get(i);
+                        if ("CLIENTID".equals(entry.path("idTypeCode").asText())) {
+                            testID = entry.path("idNumber").asText();
+                            sample.setTestID(Integer.valueOf(testID));
+                            break;
+                        }
+                    }
+                }
+
             }
         }
 
@@ -260,7 +275,7 @@ public class LimsManifestService {
         requestDTO.setTestType("VL");
         requestDTO.setSendingFacilityID(manifest.getSendingFacilityID());
         requestDTO.setSendingFacilityName(manifest.getSendingFacilityName());
-        LogInfo("RESULTS_REQUEST", requestDTO);
+//        LogInfo("RESULTS_REQUEST", requestDTO);
 
         HttpEntity<LIMSResultsRequestDTO> manifestEntity = new HttpEntity<>(requestDTO, headers);
         ResponseEntity<LIMSResultsResponseDTO> manifestResponse = restTemplate.exchange(config.getServerUrl()+resultsUrl, HttpMethod.POST, manifestEntity, LIMSResultsResponseDTO.class);
@@ -286,6 +301,20 @@ public class LimsManifestService {
             for (LIMSResultDTO result : response.getViralLoadTestReport()) {
                 LOG.info("RESULT: " + result);
                 result.setManifestRecordID(id);
+                JsonNode patientIDs = result.getPatientID();
+                String testID = null;
+
+                if (patientIDs != null && patientIDs.isArray()) {
+                    for (int i = 0; i < patientIDs.size(); i++) {
+                        JsonNode entry = patientIDs.get(i);
+                        if ("CLIENTID".equals(entry.path("idTypeCode").asText())) {
+                            testID = entry.path("idNumber").asText();
+                            result.setTestID(Integer.valueOf(testID));
+                            break;
+                        }
+                    }
+                }
+                //saving the result
                 resultService.Save(limsMapper.toResult(result));
             }
         }catch (Exception e) {

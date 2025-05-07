@@ -68,4 +68,6 @@ public class LIMSResult {
     private String Date_Transferred_Out;
     @Column(name = "rejection_reason")
     private String rejectionReason;
+    @Column(name = "test_id")
+    private Integer testID;
 }

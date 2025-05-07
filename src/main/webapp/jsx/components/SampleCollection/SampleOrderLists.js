@@ -153,6 +153,10 @@ const SampleSearch = (props) => {
             idNumber: item.patientId,
             idTypeCode: item.typecode,
           },
+          {
+            idNumber: item.testId,
+            idTypeCode: "CLIENTID",
+          },
         ],
         firstName: item.firstname,
         surName: item.surname,
@@ -180,8 +184,8 @@ const SampleSearch = (props) => {
     });
 
     samples = samples.sort((a, b) => {
-      const [numA, denA] = a.sampleID?.split("/").map(Number);
-      const [numB, denB] = b.sampleID?.split("/").map(Number);
+      const [numA, denA] = a.sampleID?.split("/").map((s) => parseInt(s, 10));
+      const [numB, denB] = b.sampleID?.split("/").map((s) => parseInt(s, 10));
       return numA !== numB ? numA - numB : denA - denB;
     });
 
@@ -223,13 +227,19 @@ const SampleSearch = (props) => {
             </LocalizationProvider>
           </Grid>
           <br />
+
           <MaterialTable
             icons={tableIcons}
-            title="Sample Collection List"
+            title={
+              collectedSamples.length > 0
+                ? "Sample Collection List"
+                : "Loading Viral Load Samples..."
+            }
             tableRef={tableRef}
             columns={[
               { title: "Type code", field: "typecode", hidden: true },
               { title: "Hospital ID", field: "patientId" },
+              { title: "Test ID", field: "testId", hidden: true },
               { title: "First Name", field: "firstname", hidden: true },
               { title: "Surname", field: "surname", hidden: true },
               { title: "Sex", field: "sex", hidden: true },
@@ -283,6 +293,7 @@ const SampleSearch = (props) => {
               .map((row) => ({
                 typecode: row.patientID.idTypeCode,
                 patientId: row.patientID.idNumber,
+                testId: row.testID,
                 firstname: row.firstName,
                 surname: row.surName,
                 sex: row.sex,

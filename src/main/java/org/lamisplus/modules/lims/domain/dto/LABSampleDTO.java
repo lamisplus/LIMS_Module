@@ -29,4 +29,5 @@ public class LABSampleDTO {
     private String priority;
     private String priorityReason;
     private Integer manifestRecordId;
+    private Integer testID;
 }

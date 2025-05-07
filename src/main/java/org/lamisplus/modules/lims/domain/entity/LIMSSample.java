@@ -40,7 +40,8 @@ public class LIMSSample {
     private String pid;
     @Column(name = "sample_id")
     private String sampleID;
-
+    @Column(name = "test_id")
+    private Integer testID;
     @Type(type = "jsonb-node")
     @Column(columnDefinition = "jsonb", name = "patient_id")
     private JsonNode patientID;

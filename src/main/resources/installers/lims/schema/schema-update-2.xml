@@ -18,4 +18,16 @@
         </sql>
     </changeSet>
 
+    <changeSet id="lims-20250515-0002" author="victor">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT count(column_name) as num FROM information_schema.columns
+                WHERE table_name='lims_result' and column_name='test_id';
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            alter table lims_result add column IF NOT EXISTS test_id INTEGER;
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>
