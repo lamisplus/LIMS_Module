@@ -4,16 +4,9 @@ import { Link, useHistory, useLocation } from "react-router-dom";
 import { Card } from "react-bootstrap";
 
 import MatButton from "@material-ui/core/Button";
-import HomeIcon from "@mui/icons-material/Home";
-import Alert from "react-bootstrap/Alert";
-import AddResultModal from "./AddResultModal";
-
 import "../SampleCollection/sample.css";
 
-import CachedIcon from "@mui/icons-material/Cached";
-
 import axios from "axios";
-import { toast } from "react-toastify";
 import { token, url } from "../../../api";
 
 import { makeStyles } from "@material-ui/core/styles";

@@ -185,7 +185,7 @@ public class LimsManifestService {
         RestTemplate restTemplate = GetRestTemplate();
         HttpHeaders headers = GetHTTPHeaders();
         LIMSConfig config = limsConfigRepository.findById(configId).orElse(null);
-        LogInfo("CONFIG", config);
+//        LogInfo("CONFIG", config);
 
         //Login to LIMS
         assert config != null;
@@ -196,7 +196,7 @@ public class LimsManifestService {
 
         //Update manifest status
         LIMSManifest dto = limsManifestRepository.findById(id).orElse(null);
-        LogInfo("SUBMITTED MANIFEST", dto);
+//        LogInfo("SUBMITTED MANIFEST", dto);
         assert dto != null;
         dto.setManifestStatus("Submitted");
 
@@ -230,7 +230,7 @@ public class LimsManifestService {
 
         HttpEntity<LIMSLoginRequestDTO> loginEntity = new HttpEntity<>(loginRequestDTO, headers);
         ResponseEntity<LIMSLoginResponseDTO> loginResponse = restTemplate.exchange(config.getServerUrl()+loginUrl, HttpMethod.POST, loginEntity, LIMSLoginResponseDTO.class);
-        LogInfo("LOGIN_RESPONSE", loginResponse.getBody());
+//        LogInfo("LOGIN_RESPONSE", loginResponse.getBody());
 
         return loginResponse.getBody();
     }
@@ -255,11 +255,11 @@ public class LimsManifestService {
         assert loginResponseDTO != null;
         requestDTO.setToken(loginResponseDTO.getJwt());
         requestDTO.setViralLoadManifest(manifest);
-        LogInfo("MANIFEST_REQUEST", requestDTO);
+//        LogInfo("MANIFEST_REQUEST", requestDTO);
 
         HttpEntity<LIMSManifestRequestDTO> manifestEntity = new HttpEntity<>(requestDTO, headers);
         ResponseEntity<LIMSManifestResponseDTO> manifestResponse = restTemplate.exchange(config.getServerUrl() + manifestUrl, HttpMethod.POST, manifestEntity, LIMSManifestResponseDTO.class);
-        LogInfo("MANIFEST_RESPONSE", manifestResponse.getBody());
+//        LogInfo("MANIFEST_RESPONSE", manifestResponse.getBody());
 
         return manifestResponse.getBody();
     }
@@ -279,7 +279,7 @@ public class LimsManifestService {
 
         HttpEntity<LIMSResultsRequestDTO> manifestEntity = new HttpEntity<>(requestDTO, headers);
         ResponseEntity<LIMSResultsResponseDTO> manifestResponse = restTemplate.exchange(config.getServerUrl()+resultsUrl, HttpMethod.POST, manifestEntity, LIMSResultsResponseDTO.class);
-        LogInfo("RESULTS_RESPONSE", manifestResponse.getBody());
+//        LogInfo("RESULTS_RESPONSE", manifestResponse.getBody());
 
         return manifestResponse.getBody();
     }
@@ -295,11 +295,11 @@ public class LimsManifestService {
 
         //Get results
         LIMSResultsResponseDTO response  = GetResultsRequest(restTemplate, headers, loginResponseDTO, id, config);
-        LOG.info("RESPONSE:"+response);
+//        LOG.info("RESPONSE:"+response);
 
         try {
             for (LIMSResultDTO result : response.getViralLoadTestReport()) {
-                LOG.info("RESULT: " + result);
+//                LOG.info("RESULT: " + result);
                 result.setManifestRecordID(id);
                 JsonNode patientIDs = result.getPatientID();
                 String testID = null;

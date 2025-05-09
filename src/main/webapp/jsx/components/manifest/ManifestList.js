@@ -166,19 +166,19 @@ const DownloadManifest = (props) => {
               },
             }),
       },
-      {
-        ...(row.manifestStatus === "Ready"
-          ? " "
-          : {
-              name: "Add RSL Result",
-              type: "link",
-              icon: <MdModeEdit size="20" color="rgb(4, 196, 217)" />,
-              to: {
-                pathname: "/add-result",
-                state: { manifestObj: row, permissions: permissions },
-              },
-            }),
-      },
+      // {
+      //   ...(row.manifestStatus === "Ready"
+      //     ? " "
+      //     : {
+      //         name: "Add RSL Result",
+      //         type: "link",
+      //         icon: <MdModeEdit size="20" color="rgb(4, 196, 217)" />,
+      //         to: {
+      //           pathname: "/add-result",
+      //           state: { manifestObj: row, permissions: permissions },
+      //         },
+      //       }),
+      // },
     ];
   };
 

@@ -92,11 +92,9 @@ public class LimsResultService {
 
             if (result.getTestID() != null) {
                 test = testRepository.findByTestId(result.getTestID());
-                LOG.info("LAB TEST: " + test);
                 testIdExists = testRepository.findResultByTestId(result.getTestID());
             }else{
                 test = testRepository.findBySampleId(result.getSampleID()).get(0);
-                LOG.info("LAB SAMPLE TEST: " + test);
             }
 
             String testResult = result.getTestResult();
@@ -106,7 +104,7 @@ public class LimsResultService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
             if (testIdExists) {
-                LOG.info("UPDATING RESULT: ");
+                LOG.info("RESULT UPDATING: ");
                 resultRepository.updateSampleResultByTestAndPatient(
                         LocalDateTime.parse(result.getAssayDate()+ " 00:00:00", formatter),
                         LocalDateTime.parse(result.getDateResultDispatched()+ " 00:00:00", formatter),
@@ -116,7 +114,7 @@ public class LimsResultService {
                         test.getPatientUuid()
                 );
             }else {
-                LOG.info("SAVING RESULT: ");
+                LOG.info("RESULT SAVING: ");
             resultRepository.SaveSampleResult(UUID.randomUUID().toString(),
                     LocalDateTime.parse(result.getAssayDate()+" 00:00:00", formatter),
                     LocalDateTime.parse(result.getDateResultDispatched()+" 00:00:00", formatter),
