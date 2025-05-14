@@ -301,17 +301,14 @@ public class LimsManifestService {
         try {
             List<LIMSResultDTO> viralLoadTestReport = response.getViralLoadTestReport();
             String manifestID = response.getManifestID();
-            // get manifest Id
             Integer manifestId = limsManifestRepository.getManifestId(manifestID).get(0);
             List<LIMSResult> limsResults = resultRepository.getLIMSResultByManifestId(manifestId);
             if (limsResults.size() < viralLoadTestReport.size()) {
                 System.out.println(" Starting to save result in db--");
                 for (LIMSResultDTO result : viralLoadTestReport) {
-//                LOG.info("RESULT: " + result);
                     result.setManifestRecordID(id);
                     JsonNode patientIDs = result.getPatientID();
                     String testID = null;
-
                     if (patientIDs != null && patientIDs.isArray()) {
                         for (int i = 0; i < patientIDs.size(); i++) {
                             JsonNode entry = patientIDs.get(i);
@@ -322,15 +319,12 @@ public class LimsManifestService {
                             }
                         }
                     }
-
-                    //saving the result
                     String hospitalNumber = getHospitalNumber(patientIDs);
                     resultService.Save(limsMapper.toResult(result), hospitalNumber);
                 }
             }
         } catch (Exception e) {
             LOG.error("ERROR:" + e);
-            e.printStackTrace();
         }
 
         return response;

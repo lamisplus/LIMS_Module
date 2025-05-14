@@ -53,16 +53,6 @@ public class LimsResultService {
         }
     }
 
-//    public List<LIMSResult> SaveAll(List<LIMSResult> results) {
-//        List<LIMSResult> savedResults = new ArrayList<>();
-//
-//        for (LIMSResult result : results) {
-//            LIMSResult savedResult = Save(result);
-//            savedResults.add(savedResult);
-//        }
-//
-//        return savedResults;
-//    }
 
     public LIMSResult Update(LIMSResult result, int id) {
         return limsResultRepository.save(result);
@@ -85,10 +75,7 @@ public class LimsResultService {
     }
 
     public void SaveResultInLabModule(LIMSResult result, String personUuid) {
-
-        System.out.println(" Starting to save result in db   4-- patient_num" + personUuid);
         try {
-            LIMSTest test = null;
             boolean testIdExists = result.getTestID() != null;
             String testResult = result.getTestResult();
             testResult = extractCopyNumber(testResult);
@@ -97,7 +84,7 @@ public class LimsResultService {
                 Integer testID = result.getTestID();
                 updateResultFields(result, testID, testResult, formatter);
             } else {
-                test = testRepository.findBySampleIdAndPersonUuid(result.getSampleID(), personUuid).orElse(null);
+                LIMSTest test = testRepository.findBySampleIdAndPersonUuid(result.getSampleID(), personUuid).orElse(null);
                 if (test != null) {
                     Integer labTestId = test.getLabTestId();
                     updateResultFields(result, labTestId, testResult, formatter);
@@ -106,7 +93,6 @@ public class LimsResultService {
                 }
             }
         } catch (Exception exception) {
-            exception.printStackTrace();
             LOG.info("ERROR SAVING RESULT IN LAB MODULE: " + exception.getMessage());
         }
     }

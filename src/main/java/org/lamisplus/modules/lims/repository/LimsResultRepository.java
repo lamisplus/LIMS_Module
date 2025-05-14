@@ -33,6 +33,10 @@ public interface LimsResultRepository extends JpaRepository<LIMSResult, Integer>
             "date_assayed = :assayDate , " +
             "date_result_reported = :reportedDate, " +
             "date_result_received = NOW(), " +
+            "created_by = 'lims', " +
+            "modified_by = 'lims', " +
+            "date_created = NOW(), " +
+            "date_modified = NOW(), " +
             "pcr_lab_sample_number = :pcrLabSampleNumber, " +
             "approved_by = :approvedBy, " +
             "archived = 0, " +
