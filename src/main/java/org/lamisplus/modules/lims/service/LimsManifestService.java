@@ -298,7 +298,13 @@ public class LimsManifestService {
 //        LOG.info("RESPONSE:"+response);
 
         try {
-            for (LIMSResultDTO result : response.getViralLoadTestReport()) {
+            List<LIMSResultDTO> viralLoadTestReport = response.getViralLoadTestReport();
+
+            LIMSResultDTO limsResultDTO = viralLoadTestReport.get(0);
+             // get manifest Id
+            List<LIMSResult> limsResults = resultRepository.getLIMSResultByManifestId(limsResultDTO.getManifestRecordID());
+            if(limsResults.size()  <  viralLoadTestReport.size()){
+            for (LIMSResultDTO result : viralLoadTestReport) {
 //                LOG.info("RESULT: " + result);
                 result.setManifestRecordID(id);
                 JsonNode patientIDs = result.getPatientID();
@@ -314,14 +320,37 @@ public class LimsManifestService {
                         }
                     }
                 }
+
                 //saving the result
-                resultService.Save(limsMapper.toResult(result));
+                String hospitalNumber = getHospitalNumber(patientIDs);
+                resultService.Save(limsMapper.toResult(result), hospitalNumber);
+            }
             }
         }catch (Exception e) {
             LOG.error("ERROR:" + e);
         }
 
         return response;
+    }
+
+    private  static String getHospitalNumber(JsonNode patientIdNode) {
+        if (patientIdNode == null || !patientIdNode.isArray()) {
+            return null; // Or throw an exception, depending on your error handling
+        }
+
+        for (JsonNode idEntry : patientIdNode) {
+            if (idEntry.isObject()) {
+                JsonNode idTypeCodeNode = idEntry.get("idTypeCode");
+                JsonNode idNumberNode = idEntry.get("idNumber");
+
+                if (idTypeCodeNode != null && idTypeCodeNode.asText().equals("HOSPITALNO") &&
+                        idNumberNode != null) {
+                    return idNumberNode.asText();
+                }
+            }
+        }
+
+        return null;
     }
 
     public Long getCurrentUserOrganization() {

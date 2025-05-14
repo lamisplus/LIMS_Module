@@ -20,6 +20,19 @@ public interface LimsResultRepository extends JpaRepository<LIMSResult, Integer>
     @Query(value="SELECT * FROM lims_result WHERE sample_id = ?1", nativeQuery = true)
     Optional<LIMSResult> getLIMSResultBySampleID(String sampleId);
 
+    @Query(value="SELECT * FROM lims_result WHERE manifest_record_id = ?1", nativeQuery = true)
+    List<LIMSResult> getLIMSResultByManifestId(Integer  manifestId);
+
+    @Query(value="SELECT * FROM lims_result WHERE manifest_record_id = ?1 AND sample_id =  ?2", nativeQuery = true)
+    List<LIMSResult> getLIMSResultByManifestRecordIdAndSampleId(Integer  manifestId,  String sampleId);
+
+
+
+
+
+
+
+
     @Transactional
     @Modifying
     @Query(value="insert into laboratory_result(uuid, date_assayed, date_result_reported, date_result_received, result_reported, test_id, patient_uuid, facility_id, patient_id)\n" +

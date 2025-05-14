@@ -17,10 +17,11 @@ import java.util.List;
 public class LimsResultController {
     private final LimsResultService limsResultService;
 
-    @PostMapping("/results")
-    public List<LIMSResult> SaveResults(@RequestBody List<LIMSResult> results){
-        return limsResultService.SaveAll(results);
-    }
+//    @PostMapping("/results")
+//    public List<LIMSResult> SaveResults(@RequestBody List<LIMSResult> results){
+//
+//        return limsResultService.SaveAll(results);
+//    }
 
     @PutMapping("/results/{id}")
     public LIMSResult UpdateResult(@PathVariable int id, @RequestBody LIMSResult result) {
