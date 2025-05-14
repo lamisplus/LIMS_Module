@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface LimsResultRepository extends JpaRepository<LIMSResult, Integer> {
     List<LIMSResult> findAllByManifestRecordID(Integer id);
@@ -23,6 +24,32 @@ public interface LimsResultRepository extends JpaRepository<LIMSResult, Integer>
 
     @Query(value="SELECT * FROM lims_result WHERE manifest_record_id = ?1 AND sample_id =  ?2", nativeQuery = true)
     List<LIMSResult> getLIMSResultByManifestRecordIdAndSampleId(Integer  manifestId,  String sampleId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE laboratory_result SET " +
+            "result_report = :testResult, " +
+            "result_reported = :testResult, " +
+            "date_assayed = :assayDate , " +
+            "date_result_reported = :reportedDate, " +
+            "date_result_received = NOW(), " +
+            "pcr_lab_sample_number = :pcrLabSampleNumber, " +
+            "approved_by = :approvedBy, " +
+            "archived = 0, " +
+            "date_approved = :dateResultDispatched " +
+            "WHERE  test_id=:testId",
+            nativeQuery = true)
+    void updateLabResultNative(
+            @Param("testResult") String testResult,
+            @Param("reportedDate") LocalDateTime reportedDate,
+            @Param("assayDate") LocalDateTime assayDate,
+            @Param("dateResultDispatched") LocalDateTime dateResultDispatched,
+            @Param("pcrLabSampleNumber") String pcrLabSampleNumber,
+            @Param("approvedBy") String approvedBy,
+            @Param("testId") Integer  testId
+    );
+
+
 
 
 

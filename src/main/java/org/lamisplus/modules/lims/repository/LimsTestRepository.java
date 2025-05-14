@@ -17,7 +17,7 @@ public interface LimsTestRepository extends JpaRepository<LIMSTest, Integer> {
             "(select test_id from laboratory_sample where sample_number=:sampleId  and patient_uuid =:personUuid and archived = 0  order by date_sample_collected desc limit 1)", nativeQuery = true)
     Optional<LIMSTest> findBySampleIdAndPersonUuid(@Param("sampleId") String sampleId, @Param("personUuid") String personUuid);
 
-    @Query(value = "SELECT uuid FROM patient_person WHERE hospital_number=:hospitalNum ", nativeQuery = true)
+    @Query(value = "SELECT uuid FROM patient_person WHERE hospital_number=:hospitalNum limit 1 ", nativeQuery = true)
     Optional<String>  getPersonUuidByHospitalNum(@Param("hospitalNum") String hospitalNum);
 
     @Query(value="select * from laboratory_test where id=:testId", nativeQuery = true)

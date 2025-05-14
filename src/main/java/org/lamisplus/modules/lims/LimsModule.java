@@ -4,9 +4,7 @@ import com.foreach.across.config.AcrossApplication;
 import com.foreach.across.core.AcrossModule;
 import com.foreach.across.core.context.configurer.ComponentScanConfigurer;
 import com.foreach.across.modules.hibernate.jpa.AcrossHibernateJpaModule;
-import com.foreach.across.modules.web.AcrossWebModule;
 import lombok.extern.slf4j.Slf4j;
-import org.lamisplus.modules.laboratory.LaboratoryModule;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.Bean;
 import springfox.documentation.builders.ApiInfoBuilder;
@@ -24,8 +22,6 @@ import java.util.List;
 @AcrossApplication(
 		modules = {
 				AcrossHibernateJpaModule.NAME,
-				AcrossWebModule.NAME,
-				LaboratoryModule.NAME
 		})
 
 @Slf4j

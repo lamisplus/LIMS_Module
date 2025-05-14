@@ -180,15 +180,15 @@ const Result = (props) => {
               //   });
             }
           });
-
-          axios
-            .post(`${url}lims/results`, limsResult, {
-              headers: { Authorization: `Bearer ${token}` },
-            })
-            .then((resp) => {
-              console.log("results saved", resp);
-            })
-            .catch((err) => console.log(err));
+          //
+          // axios
+          //   .post(`${url}lims/results`, limsResult, {
+          //     headers: { Authorization: `Bearer ${token}` },
+          //   })
+          //   .then((resp) => {
+          //     console.log("results saved", resp);
+          //   })
+          //   .catch((err) => console.log(err));
         }
       } else {
         toast.success(

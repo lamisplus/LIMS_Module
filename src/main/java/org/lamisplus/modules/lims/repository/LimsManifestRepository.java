@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface
@@ -16,5 +17,5 @@ LimsManifestRepository extends JpaRepository<LIMSManifest, Integer> {
     Optional<LIMSManifest> findLIMSManifestByManifestID (Integer integer);
 
     @Query(value="SELECT id  FROM lims_manifest WHERE manifest_id  = ?1", nativeQuery = true)
-    Optional<Integer> getManifestId(String manifiestId);
+    List<Integer> getManifestId(String manifiestId);
 }

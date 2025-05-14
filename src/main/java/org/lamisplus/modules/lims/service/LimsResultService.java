@@ -2,8 +2,6 @@ package org.lamisplus.modules.lims.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.lamisplus.modules.laboratory.domain.entity.Result;
-import org.lamisplus.modules.laboratory.repository.ResultRepository;
 import org.lamisplus.modules.lims.domain.dto.ManifestDTO;
 import org.lamisplus.modules.lims.domain.entity.LIMSResult;
 import org.lamisplus.modules.lims.domain.entity.LIMSTest;
@@ -15,7 +13,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -27,26 +24,29 @@ import java.util.UUID;
 @Transactional
 @RequiredArgsConstructor
 public class LimsResultService {
-    private final LimsResultRepository resultRepository;
+    private final LimsResultRepository limsResultRepository;
     private final LimsManifestRepository manifestRepository;
     private final LimsTestRepository testRepository;
     private final LimsMapper limsMapper;
-    private final ResultRepository labResultRepository;
+    //private final ResultRepository labResultRepository;
 
 
     public LIMSResult Save(LIMSResult result, String hospitalNumber) {
+        System.out.println(" Starting to save result in db   2--");
         Optional<String> personUuid = testRepository.getPersonUuidByHospitalNum(hospitalNumber);
         if (!personUuid.isPresent()) {
             throw new RuntimeException("Person UUID not found with give hospitalNumber   " + hospitalNumber);
         }
+        System.out.println(" Starting to save result in db   3 -- patient_num" + personUuid.get());
         if (result.getTestResult().length() > 0) {
             result.setUuid(UUID.randomUUID().toString());
             SaveResultInLabModule(result, personUuid.get());
             LOG.info("SAVING RESULT: Result saved successfully in Lab Module");
             List<LIMSResult> previousResult =
-                    resultRepository.getLIMSResultByManifestRecordIdAndSampleId(result.getManifestRecordID(), result.getSampleID());
+                    limsResultRepository.getLIMSResultByManifestRecordIdAndSampleId(result.getManifestRecordID(), result.getSampleID());
             if (previousResult.isEmpty()) {
-                return resultRepository.save(result);
+                System.out.println(" Starting to save result in db   8 -- patient_num");
+                return limsResultRepository.save(result);
             } else {
                 return result;
             }
@@ -68,26 +68,28 @@ public class LimsResultService {
 //    }
 
     public LIMSResult Update(LIMSResult result, int id) {
-        return resultRepository.save(result);
+        return limsResultRepository.save(result);
     }
 
     public LIMSResult FindById(int id) {
-        return resultRepository.findById(id).orElse(null);
+        return limsResultRepository.findById(id).orElse(null);
     }
 
     public String Delete(int id) {
-        resultRepository.deleteById(id);
+        limsResultRepository.deleteById(id);
         return id + " deleted successfully";
     }
 
     public ManifestDTO FindResultsByManifestId(Integer id) {
         ManifestDTO dto = limsMapper.toManifestDto(manifestRepository.findById(id).orElse(null));
-        List<LIMSResult> results = resultRepository.findAllByManifestRecordID(id);
+        List<LIMSResult> results = limsResultRepository.findAllByManifestRecordID(id);
         dto.setResults(results);
         return dto;
     }
 
     public void SaveResultInLabModule(LIMSResult result, String personUuid) {
+
+        System.out.println(" Starting to save result in db   4-- patient_num" + personUuid);
         try {
             LIMSTest test = null;
             boolean testIdExists = result.getTestID() != null;
@@ -96,41 +98,43 @@ public class LimsResultService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             if (testIdExists) {
                 Integer testID = result.getTestID();
-                List<Result> labResults = labResultRepository.findAllByTestIdAndArchived(testID, 0);
-                if (!labResults.isEmpty()) {
-                    updateLabResult(result, labResults, testResult, formatter);
-                }
+                System.out.println(" Starting to save result in db   5-- patient_num" + personUuid);
+                updateResultFields(result, testID, testResult, formatter);
             } else {
                 test = testRepository.findBySampleIdAndPersonUuid(result.getSampleID(), personUuid).orElse(null);
                 if (test != null) {
+                    System.out.println(" Starting to save result in db   6-- patient_num" + personUuid);
                     Integer labTestId = test.getLabTestId();
-                    List<Result> labResults = labResultRepository.findAllByTestIdAndArchived(labTestId, 0);
-                    if (!labResults.isEmpty()) {
-                        updateLabResult(result, labResults, testResult, formatter);
-                    } else {
-                        throw new RuntimeException("Lab Test not found with given PersonUUId   " + personUuid);
-                    }
+                    updateResultFields(result, labTestId, testResult, formatter);
+                } else {
+                    throw new RuntimeException("Lab Test not found with given PersonUUId   " + personUuid);
                 }
             }
         } catch (Exception exception) {
-
+            exception.printStackTrace();
             LOG.info("ERROR SAVING RESULT IN LAB MODULE: " + exception.getMessage());
         }
     }
 
-    private void updateLabResult(LIMSResult result, List<Result> labResults, String testResult, DateTimeFormatter formatter) {
-        Result labResult = labResults.get(0);
-        labResult.setResultReport(testResult);
-        labResult.setResultReported(testResult);
-        labResult.setDateAssayed(LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter));
-        labResult.setDateResultReported(LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter));
-        labResult.setDateResultReceived(LocalDateTime.now());
-        labResult.setPcrLabSampleNumber(result.getPcrLabSampleNumber());
-        labResult.setApprovedBy(result.getApprovedBy());
-        labResult.setDateApproved(LocalDate.parse(result.getDateResultDispatched() + " 00:00:00", formatter));
-        labResult.setDateSampleReceivedAtPcrLab(LocalDate.parse(result.getDateSampleReceivedAtPcrLab() + " 00:00:00", formatter));
-        labResultRepository.save(labResult);
+
+    public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
+        System.out.println(" result for update->" + result);
+        LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
+        LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
+        LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
+        String pcrLabSampleNumber = result.getPcrLabSampleNumber();
+        String approvedBy = result.getApprovedBy();
+        limsResultRepository.updateLabResultNative(
+                testResult,
+                reportedDate,
+                assayDate,
+                dateResultDispatched,
+                pcrLabSampleNumber,
+                approvedBy,
+                testId
+        );
     }
+
 
     public static String extractCopyNumber(String resultString) {
         if (resultString != null && resultString.equalsIgnoreCase("NotDetected")) {
@@ -161,9 +165,9 @@ public class LimsResultService {
         } else {
             manifestSampleId = sampleId;
         }
-        if (resultRepository.getLIMSResultBySampleID(manifestSampleId).isPresent()) {
+        if (limsResultRepository.getLIMSResultBySampleID(manifestSampleId).isPresent()) {
             System.out.println(manifestSampleId);
-            return resultRepository.getLIMSResultBySampleID(manifestSampleId).get();
+            return limsResultRepository.getLIMSResultBySampleID(manifestSampleId).get();
         }
         return null;
     }
