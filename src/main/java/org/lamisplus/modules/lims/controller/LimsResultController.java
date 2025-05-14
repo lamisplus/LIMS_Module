@@ -8,8 +8,6 @@ import org.lamisplus.modules.lims.domain.entity.LIMSTest;
 import org.lamisplus.modules.lims.service.LimsResultService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Slf4j
 @RestController
 @RequiredArgsConstructor

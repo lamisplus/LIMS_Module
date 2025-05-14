@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lamisplus.modules.lims.domain.dto.*;
 import org.lamisplus.modules.lims.service.LimsManifestService;
 import org.lamisplus.modules.patient.domain.dto.PersonMetaDataDto;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Slf4j
 @RestController

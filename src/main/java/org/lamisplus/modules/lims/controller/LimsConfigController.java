@@ -6,8 +6,6 @@ import org.lamisplus.modules.lims.domain.dto.ConfigDTO;
 import org.lamisplus.modules.lims.service.LimsConfigService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Slf4j
 @RestController
 @RequiredArgsConstructor
