@@ -32,12 +32,10 @@ public class LimsResultService {
 
 
     public LIMSResult Save(LIMSResult result, String hospitalNumber) {
-        System.out.println(" Starting to save result in db   2--");
         Optional<String> personUuid = testRepository.getPersonUuidByHospitalNum(hospitalNumber);
         if (!personUuid.isPresent()) {
             throw new RuntimeException("Person UUID not found with give hospitalNumber   " + hospitalNumber);
         }
-        System.out.println(" Starting to save result in db   3 -- patient_num" + personUuid.get());
         if (result.getTestResult().length() > 0) {
             result.setUuid(UUID.randomUUID().toString());
             SaveResultInLabModule(result, personUuid.get());
@@ -45,7 +43,6 @@ public class LimsResultService {
             List<LIMSResult> previousResult =
                     limsResultRepository.getLIMSResultByManifestRecordIdAndSampleId(result.getManifestRecordID(), result.getSampleID());
             if (previousResult.isEmpty()) {
-                System.out.println(" Starting to save result in db   8 -- patient_num");
                 return limsResultRepository.save(result);
             } else {
                 return result;
@@ -98,12 +95,10 @@ public class LimsResultService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             if (testIdExists) {
                 Integer testID = result.getTestID();
-                System.out.println(" Starting to save result in db   5-- patient_num" + personUuid);
                 updateResultFields(result, testID, testResult, formatter);
             } else {
                 test = testRepository.findBySampleIdAndPersonUuid(result.getSampleID(), personUuid).orElse(null);
                 if (test != null) {
-                    System.out.println(" Starting to save result in db   6-- patient_num" + personUuid);
                     Integer labTestId = test.getLabTestId();
                     updateResultFields(result, labTestId, testResult, formatter);
                 } else {
@@ -118,7 +113,6 @@ public class LimsResultService {
 
 
     public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
-        System.out.println(" result for update->" + result);
         LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
         LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
         LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
