@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge, Card, CardBody, Table } from "reactstrap";
 import { Row } from "react-bootstrap";
-import "./result.css";
+import "../../../css/result.css";
 import { logo } from "../SampleCollection/pcr";
 
 const today = new Date().toLocaleDateString("en-us", {
@@ -56,7 +56,7 @@ const vl_indictaion = (value) => {
 class PatientResult extends React.Component {
   render() {
     const { samples } = this.props;
-    console.log(samples);
+//    console.log(samples);
     if (!samples)
       return <div className="loading-message">Loading patient result...</div>;
 

@@ -191,8 +191,8 @@ const SampleSearch = (props) => {
       if (!aIsSlash && bIsSlash) return -1;
 
       if (!aIsSlash && !bIsSlash) {
-        const aLower = a.toLowerCase();
-        const bLower = b.toLowerCase();
+        const aLower = a.sampleID?.toLowerCase();
+        const bLower = b.sampleID?.toLowerCase();
 
         if (aLower !== bLower) return aLower.localeCompare(bLower);
         return a.localeCompare(b);
