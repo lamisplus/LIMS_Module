@@ -184,6 +184,20 @@ const SampleSearch = (props) => {
     });
 
     samples = samples.sort((a, b) => {
+      const aIsSlash = a.sampleID?.includes("/");
+      const bIsSlash = b.sampleID?.includes("/");
+
+      if (aIsSlash && !bIsSlash) return 1;
+      if (!aIsSlash && bIsSlash) return -1;
+
+      if (!aIsSlash && !bIsSlash) {
+        const aLower = a.toLowerCase();
+        const bLower = b.toLowerCase();
+
+        if (aLower !== bLower) return aLower.localeCompare(bLower);
+        return a.localeCompare(b);
+      }
+
       const [numA, denA] = a.sampleID?.split("/").map((s) => parseInt(s, 10));
       const [numB, denB] = b.sampleID?.split("/").map((s) => parseInt(s, 10));
       return numA !== numB ? numA - numB : denA - denB;

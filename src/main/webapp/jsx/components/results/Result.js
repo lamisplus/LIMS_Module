@@ -138,8 +138,6 @@ const Result = (props) => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        console.log("ghghd", response.data);
-
         if (response.data.viralLoadTestReport !== null) {
           setPercentage(40);
           setResults(response.data.viralLoadTestReport);
