@@ -1,214 +1,227 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { Badge, Spinner } from "reactstrap";
+import { Badge, Card, CardBody, Table } from "reactstrap";
 import { Row } from "react-bootstrap";
-import PrintIcon from "@mui/icons-material/Print";
-import MatButton from "@material-ui/core/Button";
-import HomeIcon from "@mui/icons-material/Home";
 import "./result.css";
 import { logo } from "../SampleCollection/pcr";
 
-import { Card, CardBody, Table } from "reactstrap";
-
-let today = new Date().toLocaleDateString("en-us", {
+const today = new Date().toLocaleDateString("en-us", {
   weekday: "long",
   year: "numeric",
   month: "short",
   day: "numeric",
 });
 
-const print = {
-  width: "100%",
-  borderCollapse: "collapse",
-  fontFamily: "Arial",
-  textAlign: "left",
+const transferStatus = (status) => {
+  switch (parseInt(status)) {
+    case 1:
+      return <p color="secondary">Not Transferred</p>;
+    case 2:
+      return <p color="primary">Received</p>;
+    case 3:
+      return <p color="info">In-Progress</p>;
+    case 4:
+      return <p color="warning">Tested</p>;
+    default:
+      return <p color="dark">None</p>;
+  }
+};
+
+const vl_indictaion = (value) => {
+  switch (parseInt(value)) {
+    case 300:
+      return <p>"Baseline (6 months after ART initiation)""</p>;
+    case 1394:
+      return <p>Baseline (At ART Initiation)</p>;
+    case 297:
+      return <p>Clinical failure</p>;
+    case 302:
+      return (
+        <p>Confirmation (3-6 months after intense adherence counselling)</p>
+      );
+    case 719:
+      return <p>Confirmation for recent infection</p>;
+    case 305:
+      return <p>Immunologic failure</p>;
+    case 306:
+      return <p>PMTCT 32-36 Weeks Gestation</p>;
+    case 301:
+      return <p>Routine (every 12 months)</p>;
+    case 303:
+      return <p>Routine</p>;
+    default:
+      return <p>Routine </p>;
+  }
 };
 
 class PatientResult extends React.Component {
   render() {
     const { samples } = this.props;
-    //console.log(samples);
-
-    const transferStatus = (e) => {
-      //console.log(e)
-      if (parseInt(e) === 1) {
-        return (
-          <p>
-            <Badge color="info">Not Transafered</Badge>
-          </p>
-        );
-      } else if (parseInt(e) === 2) {
-        return (
-          <p>
-            <Badge color="info">Received</Badge>
-          </p>
-        );
-      } else if (parseInt(e) === 3) {
-        return (
-          <p>
-            <Badge color="info">In-Progress</Badge>
-          </p>
-        );
-      } else if (parseInt(e) === 4) {
-        return (
-          <p>
-            <Badge color="warning">Tested</Badge>
-          </p>
-        );
-      } else {
-        return (
-          <p>
-            <Badge color="dark">None</Badge>
-          </p>
-        );
-      }
-    };
+    console.log(samples);
+    if (!samples)
+      return <div className="loading-message">Loading patient result...</div>;
 
     return (
-      <Card>
-        <CardBody>
-          <Row>
-            <Table size="sm" style={print}>
-              <tbody>
-                <tr>
-                  <th scope="row"></th>
-                  <th scope="row"></th>
-                  <th scope="row"></th>
-                  <th scope="row">
-                    <h2 className="text-center">NISRN VIRAL LOAD RESULT</h2>
-                  </th>
+      <div className="result-container">
+        <Card className="report-card">
+          <CardBody>
+            <header className="report-header">
+              <div className="header-text">
+                <h2 className="report-title">NISRN Viral Load Result</h2>
+                <p className="report-subtitle">
+                  National Integrated Sample Referral Network
+                </p>
+              </div>
+              <div className="report-logo">
+                <img src={logo} alt="NISRN Logo" />
+              </div>
+            </header>
 
-                  <th scope="row">
-                    <img
-                      src={logo}
-                      style={{ width: "80px", height: "80px" }}
-                      alt=""
-                    />
-                  </th>
-                </tr>
-              </tbody>
-            </Table>
-          </Row>
-          <Row>
-            <Table bordered size="sm" responsive style={print}>
-              <tbody>
-                <tr>
-                  <th scope="row">Manifest Id:</th>
-                  <td>{samples.manifestID}</td>
-                  <th scope="row">Patient Name:</th>
-                  <td>{samples.firstName + " " + samples.surName}</td>
-                  <th scope="row">Gender:</th>
-                  <td>{samples.sex === "M" ? "Male" : "Female"}</td>
-                </tr>
-                <tr>
-                  <th scope="row">Age:</th>
-                  <td>{samples.age}</td>
-                  <th scope="row">Client Unique No:</th>
-                  <td>
-                    {Object.keys(samples).length !== 0
-                      ? samples.patientID[0].idNumber
-                      : ""}
-                  </td>
-                  <th scope="row">Facility Name:</th>
-                  <td>{samples.sendingFacilityName}</td>
-                </tr>
-                <tr>
-                  <th scope="row">Sample Collected by:</th>
-                  <td>{samples.sampleCollectedBy}</td>
-                  <th scope="row">Date\Time Collected:</th>
-                  <td>{samples.sampleCollectionDate}</td>
-                  <th scope="row">Sample Id:</th>
-                  <td>{samples.sampleID}</td>
-                </tr>
-                <tr>
-                  <th scope="row">Sample Type:</th>
-                  <td>{samples.sampleType}</td>
-                  <th scope="row">Date\Time Ordered:</th>
-                  <td>{samples.sampleOrderDate}</td>
-                  <th scope="row">Date Received at PCR:</th>
-                  <td>{samples.visitDate}</td>
-                </tr>
+            <section className="section">
+              <Table className="report-table">
+                <tbody>
+                  <tr>
+                    <th>Manifest ID</th>
+                    <td>{samples.manifestID}</td>
+                    <th>Patient Name</th>
+                    <td>
+                      {samples.firstName} {samples.surName}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Gender</th>
+                    <td>{samples.sex === "M" ? "Male" : "Female"}</td>
+                    <th>Age</th>
+                    <td>{samples.age}</td>
+                  </tr>
+                  <tr>
+                    <th>Unique Client No.</th>
+                    <td>{samples.patientID?.[1]?.idNumber || ""}</td>
+                    <th>Hospital Number</th>
+                    <td>{samples.patientID?.[0]?.idNumber || ""}</td>
+                  </tr>
+                  <tr>
+                    <th>Facility</th>
+                    <td>{samples.sendingFacilityName}</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </section>
 
-                <tr>
-                  <th scope="row">Test Type:</th>
-                  <td>
-                    {
-                      <p>
-                        <Badge color="primary">Viral Load</Badge>
-                      </p>
-                    }
-                  </td>
-                  <th scope="row">Receiving Lab Name:</th>
-                  <td>{samples.receivingLabName}</td>
-                  <th scope="row">Receiving Lab Number:</th>
-                  <td>{samples.receivingLabID}</td>
-                </tr>
-              </tbody>
-            </Table>
-            <br />
-            <Table striped bordered size="sm" style={print}>
-              <tbody>
-                <tr style={{ backgroundColor: "#014d88", color: "#fff" }}>
-                  <th>Transferred Out Date</th>
-                  <th>Transfer Status</th>
-                  <th>Date Result Dispatched</th>
-                  <th>PCR Sample Number</th>
-                  <th>Test Result</th>
-                </tr>
-                {
+            <section className="section">
+              <Table className="report-table">
+                <tbody>
+                  <tr>
+                    <th>Sample Collected By</th>
+                    <td>{samples.sampleCollectedBy}</td>
+                    <th>Collection Date/Time</th>
+                    <td>{samples.sampleCollectionDate}</td>
+                  </tr>
+                  <tr>
+                    <th>Sample ID</th>
+                    <td>{samples.sampleID}</td>
+                    <th>Sample Type</th>
+                    <td>{samples.sampleType}</td>
+                  </tr>
+                  <tr>
+                    <th>Order Date</th>
+                    <td>{samples.sampleOrderDate}</td>
+                    <th>Date Received at PCR</th>
+                    <td>{samples.visitDate}</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </section>
+
+            <section className="section">
+              <Table className="report-table">
+                <tbody>
+                  <tr>
+                    <th>Test Type</th>
+                    <td>Viral Load</td>
+                    <th>VL Indication</th>
+                    <td>{vl_indictaion(samples.indicationVLTest)}</td>
+                  </tr>
+                  <tr>
+                    <th>Receiving Lab</th>
+                    <td>{samples.receivingLabName}</td>
+                    <th>Receiving Lab Number</th>
+                    <td>{samples.receivingLabID}</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </section>
+
+            <section className="section">
+              <Table className="report-table">
+                <tbody>
                   <tr>
                     <td>
-                      {samples.dateTransferredOut !== null
-                        ? samples.dateTransferredOut
-                        : "None"}
+                      <strong>Transferred Out Date: </strong>
+                      <br />
+                      {samples.dateTransferredOut || "None"}
                     </td>
-                    <td>{transferStatus(samples.transferStatus)}</td>
-                    <td>{samples.dateResultDispatched}</td>
-                    <td>{samples.pcrLabSampleNumber}</td>
-                    <td>{samples.testResult} Copies/mL</td>
+                    <td>
+                      <strong>Transfer Status: </strong>
+                      <br />
+                      {transferStatus(samples.transferStatus)}
+                    </td>
+                    <td>
+                      <strong>Result Dispatch Date: </strong>
+                      <br />
+                      {samples.dateResultDispatched}
+                    </td>
+                    <td>
+                      <strong>PCR Sample No: </strong>
+                      <br />
+                      {samples.pcrLabSampleNumber}
+                    </td>
+                    <td>
+                      <strong>Test Result: </strong>
+                      <br />
+                      {samples.testResult}
+                    </td>
                   </tr>
-                }
-              </tbody>
-            </Table>
-            <br />
-            <br />
-            <br />
-            <br />
-            <br />
-            <br />
-            <br />
-            <br />
-            <Table bordered size="sm" responsive style={print}>
-              <tbody>
-                <tr>
-                  <th scope="row">
-                    Tested by: {samples.testedBy}
-                    <br />
-                    Date: {samples.dateResultDispatched}
-                  </th>
-                  <td scope="row"></td>
-                  <th scope="row">
-                    Approved by: {samples.approvedBy}
-                    <br />
-                    Date: {samples.approvalDate}
-                  </th>
-                  <td scope="row"></td>
-                  <th scope="row">
-                    Reviewed by:
-                    <br />
-                    Date: {today}
-                  </th>
-                  <th scope="row">Signature</th>
-                </tr>
-              </tbody>
-            </Table>
+                </tbody>
+              </Table>
+            </section>
 
-            <br />
-            <span style={{ fontSize: "10px" }}>LAMISPlus 2.0: {today}</span>
-          </Row>
-          <hr />
-        </CardBody>
-      </Card>
+            <section className="section">
+              <Table className="report-table">
+                <tbody>
+                  <tr>
+                    <th>Ordered by</th>
+                    <td>{samples.sampleOrderedBy}</td>
+                    <th>Date</th>
+                    <td>{samples.sampleOrderDate}</td>
+                  </tr>
+                  <tr>
+                    <th>Tested by</th>
+                    <td>{samples.testedBy}</td>
+                    <th>Date</th>
+                    <td>{samples.dateResultDispatched}</td>
+                  </tr>
+                  <tr>
+                    <th>Approved by</th>
+                    <td>{samples.approvedBy}</td>
+                    <th>Approval Date</th>
+                    <td>{samples.approvalDate}</td>
+                  </tr>
+                  <tr>
+                    <th>Reviewed by</th>
+                    <td>______________________</td>
+                    <th>Signature</th>
+                    <td>______________________</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </section>
+
+            <footer className="report-footer">
+              <p>LAMISPlus 2.0 | {today}</p>
+            </footer>
+          </CardBody>
+        </Card>
+      </div>
     );
   }
 }
