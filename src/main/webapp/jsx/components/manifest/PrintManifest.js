@@ -101,7 +101,7 @@ const PrintManifest = (props) => {
                     padding: 0;
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
-                    font-size: 11px;
+                    font-size: 12px;
                   }
 
                   .result-container {
