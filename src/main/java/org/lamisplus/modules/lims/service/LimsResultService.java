@@ -79,15 +79,16 @@ public class LimsResultService {
             boolean testIdExists = result.getTestID() != null;
             String testResult = result.getTestResult();
             testResult = extractCopyNumber(testResult);
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-dd-MM HH:mm:ss");
+            DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             if (testIdExists) {
                 Integer testID = result.getTestID();
-                updateResultFields(result, testID, testResult, formatter);
+                updateResultFields(result, testID, testResult, formatter, formatter2);
             } else {
                 LIMSTest test = testRepository.findBySampleIdAndPersonUuid(result.getSampleID(), personUuid).orElse(null);
                 if (test != null) {
                     Integer labTestId = test.getLabTestId();
-                    updateResultFields(result, labTestId, testResult, formatter);
+                    updateResultFields(result, labTestId, testResult, formatter, formatter2);
                 } else {
                     throw new RuntimeException("Lab Test not found with given PersonUUId   " + personUuid);
                 }
@@ -98,10 +99,10 @@ public class LimsResultService {
     }
 
 
-    public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
+    public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter,  DateTimeFormatter formatter2) {
         LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
         LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
-        LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
+        LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter2);
         String pcrLabSampleNumber = result.getPcrLabSampleNumber();
         String approvedBy = result.getApprovedBy();
         limsResultRepository.updateLabResultNative(

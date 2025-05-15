@@ -45,6 +45,7 @@ public class LimsSampleController {
     public LABSampleMetaDataDTO GetAllCollectedSamples(@RequestParam(defaultValue = "*") String searchParam,
                                                        @RequestParam(defaultValue = "0") Integer pageNo,
                                                        @RequestParam(defaultValue = "10") Integer pageSize) {
+        // need to be revisited
         return limsSampleService.getAllPendingSamples(searchParam, pageNo, pageSize);
     }
 

@@ -28,6 +28,7 @@ public class LimsConfigController {
         return limsConfigService.Delete(id);
     }
 
+
     @GetMapping("/config")
     public ConfigDTO GetConfig(){
         boolean config = limsConfigService.FindAll().isEmpty();
