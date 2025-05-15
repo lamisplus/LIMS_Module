@@ -11,6 +11,7 @@ import org.lamisplus.modules.lims.repository.LimsResultRepository;
 import org.lamisplus.modules.lims.repository.LimsTestRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -28,8 +29,6 @@ public class LimsResultService {
     private final LimsManifestRepository manifestRepository;
     private final LimsTestRepository testRepository;
     private final LimsMapper limsMapper;
-    //private final ResultRepository labResultRepository;
-
 
     public LIMSResult Save(LIMSResult result, String hospitalNumber) {
         Optional<String> personUuid = testRepository.getPersonUuidByHospitalNum(hospitalNumber);
@@ -74,6 +73,7 @@ public class LimsResultService {
         return dto;
     }
 
+    @Transactional(value ="limsTransactionManger" , propagation = Propagation.REQUIRES_NEW)
     public void SaveResultInLabModule(LIMSResult result, String personUuid) {
         try {
             boolean testIdExists = result.getTestID() != null;
