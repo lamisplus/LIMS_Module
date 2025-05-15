@@ -89,7 +89,7 @@ const PatientResultPrint = (props) => {
                       padding: 0;
                       -webkit-print-color-adjust: exact;
                       print-color-adjust: exact;
-                      font-size: 11px;
+                      font-size: 12px;
                     }
 
                     .result-container {
@@ -100,7 +100,34 @@ const PatientResultPrint = (props) => {
                     }
 
                     .report-header {
-                      margin-bottom: 10px;
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      border-bottom: 2px solid #014d88;
+                      padding-bottom: 8px;
+                      margin-bottom: 15px;
+                    }
+
+                    .header-text {
+                      flex: 1;
+                    }
+
+                    .report-title {
+                      font-size: 18px;
+                      font-weight: 600;
+                      color: #014d88;
+                      margin: 0;
+                    }
+
+                    .report-subtitle {
+                      font-size: 12px;
+                      color: #666;
+                    }
+
+                    .report-logo img {
+                      width: 60px;
+                      height: auto;
+                      object-fit: contain;
                     }
 
                     .section {
@@ -116,7 +143,10 @@ const PatientResultPrint = (props) => {
 
                     .report-table td,
                     .report-table th {
-                      padding: 5px;
+                       padding: 6px 8px;
+                        border: 1px solid #ccc;
+                        text-align: left;
+                        vertical-align: middle;
                     }
 
                     @page {
