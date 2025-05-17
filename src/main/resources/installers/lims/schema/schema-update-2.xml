@@ -30,4 +30,30 @@
         </sql>
     </changeSet>
 
+    <changeSet id="lims-20250517-0003" author="Aniwange">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT count(column_name) as num FROM information_schema.columns
+                WHERE table_name='lims_sample' and column_name='hospital_number';
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            alter table lims_sample add column IF NOT EXISTS  hospital_number  character varying(255);
+        </sql>
+
+    </changeSet>
+
+    <changeSet id="lims-20250517-0004" author="Aniwange">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT count(column_name) as num FROM information_schema.columns
+                WHERE table_name='lims_sample' and column_name='unique_id';
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            alter table lims_sample add column IF NOT EXISTS  unique_id character varying(255);
+        </sql>
+
+    </changeSet>
+
 </databaseChangeLog>

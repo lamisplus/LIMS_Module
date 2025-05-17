@@ -1,3 +1,4 @@
+
 CREATE SEQUENCE lims_manifest_id_seq;
 CREATE TABLE public.lims_manifest
 (

@@ -13,6 +13,7 @@ import org.lamisplus.modules.lims.domain.dto.LABSampleMetaDataDTO;
 import org.lamisplus.modules.lims.domain.dto.PatientIdDTO;
 import org.lamisplus.modules.lims.domain.entity.LIMSSample;
 import org.lamisplus.modules.lims.domain.mapper.LimsMapper;
+import org.lamisplus.modules.lims.repository.LabSampleRepositoryCustom;
 import org.lamisplus.modules.lims.repository.LimsSampleRepository;
 import org.lamisplus.modules.lims.util.JsonNodeTransformer;
 import org.lamisplus.modules.patient.domain.dto.PersonResponseDto;
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,7 @@ public class LimsSampleService {
     private final PersonService personService;
     private  final UserService userService;
     private final JsonNodeTransformer jsonNodeTransformer;
+    private final LabSampleRepositoryCustom labSampleRepositoryCustom;
 
     public LABSampleDTO Save(LABSampleDTO sampleDTO){
         LIMSSample sample = limsMapper.toSample(sampleDTO);
@@ -63,10 +66,15 @@ public class LimsSampleService {
     }
 
     public LABSampleMetaDataDTO getAllPendingSamples(String searchParam, int pageNo, int pageSize) {
+
+//
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
 
         Page<LIMSSample> limsSamples = sampleRepository.findPendingVLSamples(getCurrentUserOrganization(), paging);
         return getManifestListMetaDataDto(limsSamples);
+    }
+    public Page<LABSampleDTO> getPendingLabSamples(LocalDate from,  LocalDate to,  int pageNo, int pageSize ) {
+        return  labSampleRepositoryCustom.findLabSamples(getCurrentUserOrganization(),  from,  to,  pageSize, pageNo );
     }
 
     @Nullable
@@ -109,7 +117,7 @@ public class LimsSampleService {
             patientIdDTOS.add(patientIdDTO);
 
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode patientIDNode = mapper.convertValue(patientIdDTO, JsonNode.class);
+            JsonNode patientIDNode = mapper.convertValue(patientIdDTOS, JsonNode.class);
 
             sampleDTO.setPatientID(patientIDNode);
             sampleDTO.setAge("10");

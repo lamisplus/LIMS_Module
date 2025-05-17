@@ -1,5 +1,6 @@
 package org.lamisplus.modules.lims.repository;
 
+import org.lamisplus.modules.lims.domain.dto.LABSampleDTO;
 import org.lamisplus.modules.lims.domain.entity.LIMSSample;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

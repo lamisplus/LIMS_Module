@@ -7,7 +7,7 @@ import org.springframework.core.annotation.Order;
 @Order(3)
 @Installer(name = "lims-schema-installer-update-2",
         description = "LIMS installer updates 2",
-        version = 3)
+        version = 4)
 public class LimsSchemaInstallerUpdate2 extends AcrossLiquibaseInstaller {
     public LimsSchemaInstallerUpdate2() {
         super("classpath:installers/lims/schema/schema-update-2.xml");

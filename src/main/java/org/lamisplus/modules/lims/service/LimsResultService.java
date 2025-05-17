@@ -30,6 +30,7 @@ public class LimsResultService {
     private final LimsTestRepository testRepository;
     private final LimsMapper limsMapper;
 
+
     public LIMSResult Save(LIMSResult result, String hospitalNumber) {
         Optional<String> personUuid = testRepository.getPersonUuidByHospitalNum(hospitalNumber);
         if (!personUuid.isPresent()) {
@@ -73,22 +74,22 @@ public class LimsResultService {
         return dto;
     }
 
-    @Transactional(value ="limsTransactionManger" , propagation = Propagation.REQUIRES_NEW)
+    @Transactional(value = "limsTransactionManger", propagation = Propagation.REQUIRES_NEW)
     public void SaveResultInLabModule(LIMSResult result, String personUuid) {
         try {
             boolean testIdExists = result.getTestID() != null;
             String testResult = result.getTestResult();
             testResult = extractCopyNumber(testResult);
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-dd-MM HH:mm:ss");
-            DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             if (testIdExists) {
                 Integer testID = result.getTestID();
-                updateResultFields(result, testID, testResult, formatter, formatter2);
+                updateResultFields(result, testID, testResult, formatter);
             } else {
                 LIMSTest test = testRepository.findBySampleIdAndPersonUuid(result.getSampleID(), personUuid).orElse(null);
                 if (test != null) {
                     Integer labTestId = test.getLabTestId();
-                    updateResultFields(result, labTestId, testResult, formatter, formatter2);
+                    updateResultFields(result, labTestId, testResult, formatter);
                 } else {
                     throw new RuntimeException("Lab Test not found with given PersonUUId   " + personUuid);
                 }
@@ -99,10 +100,10 @@ public class LimsResultService {
     }
 
 
-    public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter,  DateTimeFormatter formatter2) {
+    public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
         LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
         LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
-        LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter2);
+        LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
         String pcrLabSampleNumber = result.getPcrLabSampleNumber();
         String approvedBy = result.getApprovedBy();
         limsResultRepository.updateLabResultNative(
