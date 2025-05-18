@@ -4,4 +4,4 @@ export const url = "/api/v1/";
 // export const url = "http://localhost:8388/api/v1/";
 // //export const apiUrl = "http://localhost:9090/api/";
 // export const token =
-//   "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJndWVzdEBsYW1pc3BsdXMub3JnIiwiYXV0aCI6IlN1cGVyIEFkbWluIiwibmFtZSI6Ikd1ZXN0IEd1ZXN0IiwiZXhwIjoxNzQ3MzAzMDE2fQ.VT2sBp6XaMyeejtNYkrl7KgMpCLuwjzVd3eV73YyUmKCWr2IIp46g8PRtON5vUNgvVoLR5s4FzlXKPM8Mjb05w";
+//   "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJndWVzdEBsYW1pc3BsdXMub3JnIiwiYXV0aCI6IlN1cGVyIEFkbWluIiwibmFtZSI6Ikd1ZXN0IEd1ZXN0IiwiZXhwIjoxNzQ3NjE0NjAyfQ.Z7r8b60VDkDe0q1bttrLTMMsLClUpgNsCMmAAVR5Pl8FxL0I6MQ2gH4yWLizUkI_9NNyGW2T-ZMBi1FXKWL4Dg";

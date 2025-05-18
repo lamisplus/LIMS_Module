@@ -26,37 +26,37 @@ const transferStatus = (status) => {
   }
 };
 
-const vl_indictaion = (value) => {
-  switch (parseInt(value)) {
-    case 300:
-      return <p>"Baseline (6 months after ART initiation)""</p>;
-    case 1394:
-      return <p>Baseline (At ART Initiation)</p>;
-    case 297:
-      return <p>Clinical failure</p>;
-    case 302:
-      return (
-        <p>Confirmation (3-6 months after intense adherence counselling)</p>
-      );
-    case 719:
-      return <p>Confirmation for recent infection</p>;
-    case 305:
-      return <p>Immunologic failure</p>;
-    case 306:
-      return <p>PMTCT 32-36 Weeks Gestation</p>;
-    case 301:
-      return <p>Routine (every 12 months)</p>;
-    case 303:
-      return <p>Routine</p>;
-    default:
-      return <p>Routine </p>;
-  }
-};
+// const vl_indictaion = (value) => {
+//   switch (parseInt(value)) {
+//     case 300:
+//       return <p>"Baseline (6 months after ART initiation)""</p>;
+//     case 1394:
+//       return <p>Baseline (At ART Initiation)</p>;
+//     case 297:
+//       return <p>Clinical failure</p>;
+//     case 302:
+//       return (
+//         <p>Confirmation (3-6 months after intense adherence counselling)</p>
+//       );
+//     case 719:
+//       return <p>Confirmation for recent infection</p>;
+//     case 305:
+//       return <p>Immunologic failure</p>;
+//     case 306:
+//       return <p>PMTCT 32-36 Weeks Gestation</p>;
+//     case 301:
+//       return <p>Routine (every 12 months)</p>;
+//     case 303:
+//       return <p>Routine</p>;
+//     default:
+//       return <p>Routine </p>;
+//   }
+// };
 
 class PatientResult extends React.Component {
   render() {
     const { samples } = this.props;
-//    console.log(samples);
+    //    console.log(samples);
     if (!samples)
       return <div className="loading-message">Loading patient result...</div>;
 
@@ -67,6 +67,7 @@ class PatientResult extends React.Component {
             <header className="report-header">
               <div className="header-text">
                 <h2 className="report-title">NISRN Viral Load Result</h2>
+                <h5 className="report-titled">{samples.receivingLabName}</h5>
                 <p className="report-subtitle">
                   National Integrated Sample Referral Network
                 </p>
@@ -82,14 +83,14 @@ class PatientResult extends React.Component {
                   <tr>
                     <th>Manifest ID</th>
                     <td>{samples.manifestID}</td>
-                    <th>Patient Name</th>
-                    <td>
-                      {samples.firstName} {samples.surName}
-                    </td>
+                    <th>Surname Name</th>
+                    <td>{samples.surName}</td>
+                    <th>First Name</th>
+                    <td>{samples.firstName}</td>
                   </tr>
                   <tr>
                     <th>Gender</th>
-                    <td>{samples.sex === "M" ? "Male" : "Female"}</td>
+                    <td>{samples.sex}</td>
                     <th>Age</th>
                     <td>{samples.age}</td>
                   </tr>
@@ -98,6 +99,8 @@ class PatientResult extends React.Component {
                     <td>{samples.patientID?.[1]?.idNumber || ""}</td>
                     <th>Hospital Number</th>
                     <td>{samples.patientID?.[0]?.idNumber || ""}</td>
+                    <th>Test Number</th>
+                    <td>{samples.patientID?.[2]?.idNumber || ""}</td>
                   </tr>
                   <tr>
                     <th>Facility</th>
@@ -139,7 +142,7 @@ class PatientResult extends React.Component {
                     <th>Test Type</th>
                     <td>Viral Load</td>
                     <th>VL Indication</th>
-                    <td>{vl_indictaion(samples.indicationVLTest)}</td>
+                    <td>{samples.indicationVLTest}</td>
                   </tr>
                   <tr>
                     <th>Receiving Lab</th>
@@ -199,6 +202,12 @@ class PatientResult extends React.Component {
                     <td>{samples.testedBy}</td>
                     <th>Date</th>
                     <td>{samples.dateResultDispatched}</td>
+                  </tr>
+                  <tr>
+                    <th>Assay by</th>
+                    <td>{samples.approvedBy}</td>
+                    <th>Assayed Date</th>
+                    <td>{samples.assayDate}</td>
                   </tr>
                   <tr>
                     <th>Approved by</th>

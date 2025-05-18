@@ -1,4 +1,10 @@
-import React, { useEffect, useCallback, useState } from "react";
+import React, {
+  useEffect,
+  useCallback,
+  useState,
+  useRef,
+  forwardRef,
+} from "react";
 import { Card } from "react-bootstrap";
 import Grid from "@material-ui/core/Grid";
 import "./sample.css";
@@ -9,73 +15,114 @@ import Box from "@mui/material/Box";
 import { LocalizationProvider } from "@mui/x-date-pickers-pro";
 import { AdapterDayjs } from "@mui/x-date-pickers-pro/AdapterDayjs";
 import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
-import { forwardRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { token, url } from "../../../api";
 import MaterialTable from "material-table";
-import * as Icons from "@material-ui/icons";
+import AddBox from "@material-ui/icons/AddBox";
+import ArrowUpward from "@material-ui/icons/ArrowUpward";
+import Check from "@material-ui/icons/Check";
+import ChevronLeft from "@material-ui/icons/ChevronLeft";
+import ChevronRight from "@material-ui/icons/ChevronRight";
+import Clear from "@material-ui/icons/Clear";
+import DeleteOutline from "@material-ui/icons/DeleteOutline";
+import Edit from "@material-ui/icons/Edit";
+import FilterList from "@material-ui/icons/FilterList";
+import FirstPage from "@material-ui/icons/FirstPage";
+import LastPage from "@material-ui/icons/LastPage";
+import Remove from "@material-ui/icons/Remove";
+import SaveAlt from "@material-ui/icons/SaveAlt";
+import Search from "@material-ui/icons/Search";
+import ViewColumn from "@material-ui/icons/ViewColumn";
 
-const tableIcons = Object.fromEntries(
-  Object.entries(Icons).map(([key, Component]) => [
-    key,
-    forwardRef((props, ref) => <Component {...props} ref={ref} />),
-  ])
-);
+const tableIcons = {
+  Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
+  Check: forwardRef((props, ref) => <Check {...props} ref={ref} />),
+  Clear: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
+  Delete: forwardRef((props, ref) => <DeleteOutline {...props} ref={ref} />),
+  DetailPanel: forwardRef((props, ref) => (
+    <ChevronRight {...props} ref={ref} />
+  )),
+  Edit: forwardRef((props, ref) => <Edit {...props} ref={ref} />),
+  Export: forwardRef((props, ref) => <SaveAlt {...props} ref={ref} />),
+  Filter: forwardRef((props, ref) => <FilterList {...props} ref={ref} />),
+  FirstPage: forwardRef((props, ref) => <FirstPage {...props} ref={ref} />),
+  LastPage: forwardRef((props, ref) => <LastPage {...props} ref={ref} />),
+  NextPage: forwardRef((props, ref) => <ChevronRight {...props} ref={ref} />),
+  PreviousPage: forwardRef((props, ref) => (
+    <ChevronLeft {...props} ref={ref} />
+  )),
+  ResetSearch: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
+  Search: forwardRef((props, ref) => <Search {...props} ref={ref} />),
+  SortArrow: forwardRef((props, ref) => <ArrowUpward {...props} ref={ref} />),
+  ThirdStateCheck: forwardRef((props, ref) => <Remove {...props} ref={ref} />),
+  ViewColumn: forwardRef((props, ref) => <ViewColumn {...props} ref={ref} />),
+};
 
-const SampleSearch = (props) => {
+const SampleSearch = ({ setSubmitted }) => {
   const [collectedSamples, setCollectedSamples] = useState([]);
   const [filteredSamples, setFilteredSamples] = useState([]);
-  const [value, setValue] = useState([null, null]);
-  const tableRef = React.createRef();
+  const [dateRange, setDateRange] = useState([null, null]);
+  const tableRef = useRef();
 
-  const startDate = value[0]?.$d || null;
-  const endDate = value[1]?.$d || null;
+  const startDate = dateRange[0]?.$d || null;
+  const endDate = dateRange[1]?.$d || null;
 
-  const loadLabTestData = useCallback(async () => {
+  const formatDate = (date) => {
+    if (!date) return null;
+    return new Date(date).toISOString().split("T")[0];
+  };
+
+  const calculateAge = (dob) =>
+    dob ? new Date().getFullYear() - new Date(dob).getFullYear() : null;
+
+  const loadLabTestData = useCallback(async (start, end) => {
     try {
+      const startParam = start ? `startDate=${start}&` : "";
+      const endParam = end ? `endDate=${end}&` : "";
+
+      const queryParams = `${startParam}${endParam}pageNo=0&pageSize=100`;
       const response = await axios.get(
-        `${url}lims/collected-samples/?searchParam=*&pageNo=0&pageSize=100`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${url}lims/lab-samples/pending?${queryParams}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
-      const records = response.data.records || [];
+
+      const records = response.data.content || [];
       setCollectedSamples(records);
       setFilteredSamples(records);
 
       localStorage.removeItem("samples");
       localStorage.removeItem("manifest");
     } catch (e) {
+      console.error(e);
       toast.error("An error occurred while fetching lab samples data");
     }
   }, []);
 
   useEffect(() => {
-    loadLabTestData();
-    props.setSubmitted(1);
-  }, [loadLabTestData]);
+    loadLabTestData(null, null);
+    setSubmitted(1);
+  }, [loadLabTestData, setSubmitted]);
 
   useEffect(() => {
-    if (!startDate && !endDate) {
+    const formattedStart = formatDate(startDate);
+    const formattedEnd = formatDate(endDate);
+
+    if (!formattedStart && !formattedEnd) {
       setFilteredSamples(collectedSamples);
     } else {
-      const filtered = collectedSamples.filter((sample) => {
-        const date = new Date(sample.sampleCollectionDate);
-        return (
-          (!startDate || date >= startDate) && (!endDate || date <= endDate)
-        );
-      });
-      setFilteredSamples(filtered);
+      loadLabTestData(formattedStart, formattedEnd);
     }
-  }, [startDate, endDate, collectedSamples]);
-
-  const calculateAge = (dob) =>
-    new Date().getFullYear() - new Date(dob).getFullYear();
+  }, [startDate, endDate, loadLabTestData]);
 
   const handleSampleChanges = (samples) => {
     const transformed = uniq(samples).map((item) => ({
       patientID: [
-        { idNumber: item.patientId, idTypeCode: item.typecode },
+        { idNumber: item.patientId, idTypeCode: "HOSPITALNO" },
         { idNumber: item.testId, idTypeCode: "CLIENTID" },
+        { idNumber: item.uniqueId, idTypeCode: "RECENCY" },
       ],
       firstName: item.firstname,
       surName: item.surname,
@@ -84,7 +131,7 @@ const SampleSearch = (props) => {
       dateOfBirth: item.dob,
       sampleID: item.sampleId,
       sampleType: item.sampleType,
-      indicationVLTest: 1,
+      indicationVLTest: item.typecode,
       sampleOrderedBy: item.orderby,
       sampleOrderDate: item.orderbydate,
       sampleCollectedBy: item.collectedby,
@@ -97,17 +144,9 @@ const SampleSearch = (props) => {
       priority: 0,
     }));
 
-    transformed.sort((a, b) => {
-//      const aSlash = a.sampleID?.includes("/");
-//      const bSlash = b.sampleID?.includes("/");
-//      if (aSlash && !bSlash) return 1;
-//      if (!aSlash && bSlash) return -1;
-//      if (!aSlash && !bSlash) return a.sampleID?.localeCompare(b.sampleID);
-//      const [numA, denA] = a.sampleID.split("/").map(Number);
-//      const [numB, denB] = b.sampleID.split("/").map(Number);
-//      return numB - numA  || denB - denA;
-        return a.sampleID?.localeCompare(b.sampleID, "en", { sensitivity: "base"});
-    });
+    transformed.sort((a, b) =>
+      a.sampleID?.localeCompare(b.sampleID, "en", { sensitivity: "base" })
+    );
 
     localStorage.setItem("samples", JSON.stringify(transformed));
   };
@@ -122,8 +161,8 @@ const SampleSearch = (props) => {
               localeText={{ start: "Start-Date", end: "End-Date" }}
             >
               <DateRangePicker
-                value={value}
-                onChange={(newValue) => setValue(newValue)}
+                value={dateRange}
+                onChange={(newRange) => setDateRange(newRange)}
                 renderInput={(startProps, endProps) => (
                   <>
                     <TextField {...startProps} />
@@ -135,7 +174,6 @@ const SampleSearch = (props) => {
             </LocalizationProvider>
           </Grid>
           <br />
-
           <MaterialTable
             icons={tableIcons}
             title={
@@ -145,8 +183,13 @@ const SampleSearch = (props) => {
             }
             tableRef={tableRef}
             columns={[
-              { title: "Type code", field: "typecode", hidden: true },
+              {
+                title: "VL Test Indication",
+                field: "indicationVLTest",
+                hidden: true,
+              },
               { title: "Hospital ID", field: "patientId" },
+              { title: "Unique ID", field: "uniqueId", hidden: true },
               { title: "Test ID", field: "testId", hidden: true },
               { title: "First Name", field: "firstname", hidden: true },
               { title: "Surname", field: "surname", hidden: true },
@@ -174,8 +217,9 @@ const SampleSearch = (props) => {
             ]}
             isLoading={collectedSamples.length === 0}
             data={filteredSamples.map((row) => ({
-              typecode: row.patientID?.idTypeCode,
-              patientId: row.patientID?.idNumber,
+              typecode: row.indicationVLTest,
+              patientId: row.hospitalNumber,
+              uniqueId: row.id,
               testId: row.testID,
               firstname: row.firstName,
               surname: row.surName,

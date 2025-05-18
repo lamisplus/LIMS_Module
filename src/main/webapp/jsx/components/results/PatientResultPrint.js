@@ -89,7 +89,7 @@ const PatientResultPrint = (props) => {
                       padding: 0;
                       -webkit-print-color-adjust: exact;
                       print-color-adjust: exact;
-                      font-size: 12px;
+                      font-size: 14px;
                     }
 
                     .result-container {
@@ -120,7 +120,7 @@ const PatientResultPrint = (props) => {
                     }
 
                     .report-subtitle {
-                      font-size: 12px;
+                      font-size: 14px;
                       color: #666;
                     }
 
@@ -141,12 +141,27 @@ const PatientResultPrint = (props) => {
                       color: white !important;
                     } */
 
-                    .report-table td,
-                    .report-table th {
-                       padding: 6px 8px;
-                        border: 1px solid #ccc;
-                        text-align: left;
-                        vertical-align: middle;
+                    .report-table {
+                      width: 100%;
+                      border-collapse: collapse;
+                      font-size: 12px;
+                      margin-top: 5px;
+                    }
+
+                    .report-table th,
+                    .report-table td {
+                      padding: 6px 8px;
+                      border: 1px solid #ccc;
+                      text-align: left;
+                      vertical-align: middle;
+                    }
+
+                    .report-footer {
+                      text-align: right;
+                      font-size: 10px;
+                      color: #666;
+                      margin-top: 20px;
+                      page-break-inside: avoid;
                     }
 
                     @page {
@@ -158,7 +173,7 @@ const PatientResultPrint = (props) => {
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
-    pageStyle
+    pageStyle,
   });
 
   const loadInfo = useCallback(async () => {
