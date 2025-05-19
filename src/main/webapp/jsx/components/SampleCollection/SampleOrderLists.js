@@ -70,7 +70,9 @@ const SampleSearch = ({ setSubmitted }) => {
 
   const formatDate = (date) => {
     if (!date) return null;
-    return new Date(date).toISOString().split("T")[0];
+    const inputDate = new Date(date);
+    if (isNaN(inputDate.getTime())) return null;
+    return inputDate.toISOString().split("T")[0];
   };
 
   const calculateAge = (dob) =>
@@ -113,7 +115,8 @@ const SampleSearch = ({ setSubmitted }) => {
     if (!formattedStart && !formattedEnd) {
       setFilteredSamples(collectedSamples);
     } else {
-      loadLabTestData(formattedStart, formattedEnd);
+      if (formattedStart && formattedEnd)
+        loadLabTestData(formattedStart, formattedEnd);
     }
   }, [startDate, endDate, loadLabTestData]);
 
@@ -219,7 +222,7 @@ const SampleSearch = ({ setSubmitted }) => {
             data={filteredSamples.map((row) => ({
               typecode: row.indicationVLTest,
               patientId: row.hospitalNumber,
-              uniqueId: row.id,
+              uniqueId: row.patientID[2]?.idNumber,
               testId: row.testID,
               firstname: row.firstName,
               surname: row.surName,
