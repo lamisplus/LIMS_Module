@@ -68,22 +68,36 @@ const SampleSearch = ({ setSubmitted }) => {
   const startDate = dateRange[0]?.$d || null;
   const endDate = dateRange[1]?.$d || null;
 
+
   const formatDate = (date) => {
     if (!date) return null;
     const inputDate = new Date(date);
     if (isNaN(inputDate.getTime())) return null;
-    return inputDate.toISOString().split("T")[0];
+
+    // Use local timezone formatting to prevent date shifts
+    return format(inputDate, 'yyyy-MM-dd');
   };
+
+  // const formatDate = (date) => {
+  //   if (!date) return null;
+  //   const inputDate = new Date(date);
+  //   if (isNaN(inputDate.getTime())) return null;
+  //   return inputDate.toISOString().split("T")[0];
+  // };
 
   const calculateAge = (dob) =>
     dob ? new Date().getFullYear() - new Date(dob).getFullYear() : null;
 
   const loadLabTestData = useCallback(async (start, end) => {
     try {
-      const startParam = start ? `startDate=${start}&` : "";
-      const endParam = end ? `endDate=${end}&` : "";
-
-      const queryParams = `${startParam}${endParam}pageNo=0&pageSize=100`;
+      // const startParam = start ? `startDate=${start}&` : "";
+      // const endParam = end ? `endDate=${end}&` : "";
+      const params = [];
+      if (start) params.push(`startDate=${start}`);
+      if (end) params.push(`endDate=${end}`);
+      params.push("pageNo=0", "pageSize=100");
+      const queryParams = params.join("&");
+     // const queryParams = `${startParam}${endParam}pageNo=0&pageSize=100`;
       const response = await axios.get(
         `${url}lims/lab-samples/pending?${queryParams}`,
         {
@@ -110,15 +124,36 @@ const SampleSearch = ({ setSubmitted }) => {
 
   useEffect(() => {
     const formattedStart = formatDate(startDate);
-    const formattedEnd = formatDate(endDate);
+    let formattedEnd = formatDate(endDate);
+
+    // If we have an end date, add one day to make it inclusive
+    if (formattedEnd) {
+      const endDateObj = new Date(endDate);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      formattedEnd = formatDate(endDateObj);
+    }
 
     if (!formattedStart && !formattedEnd) {
       setFilteredSamples(collectedSamples);
     } else {
-      if (formattedStart && formattedEnd)
+      if (formattedStart && formattedEnd) {
         loadLabTestData(formattedStart, formattedEnd);
+      }
     }
   }, [startDate, endDate, loadLabTestData]);
+
+
+  // useEffect(() => {
+  //   const formattedStart = formatDate(startDate);
+  //   const formattedEnd = formatDate(endDate);
+  //
+  //   if (!formattedStart && !formattedEnd) {
+  //     setFilteredSamples(collectedSamples);
+  //   } else {
+  //     if (formattedStart && formattedEnd)
+  //       loadLabTestData(formattedStart, formattedEnd);
+  //   }
+  // }, [startDate, endDate, loadLabTestData]);
 
   const handleSampleChanges = (samples) => {
     const transformed = uniq(samples).map((item) => ({
