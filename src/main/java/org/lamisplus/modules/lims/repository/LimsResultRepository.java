@@ -10,10 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface LimsResultRepository extends JpaRepository<LIMSResult, Integer> {
     List<LIMSResult> findAllByManifestRecordID(Integer id);
+
     List<LIMSResult> findAllBySampleID(String sampleId);
 
     @Query(value="SELECT * FROM lims_result WHERE sample_id = ?1", nativeQuery = true)
@@ -24,6 +24,9 @@ public interface LimsResultRepository extends JpaRepository<LIMSResult, Integer>
 
     @Query(value="SELECT * FROM lims_result WHERE manifest_record_id = ?1 AND sample_id =  ?2", nativeQuery = true)
     List<LIMSResult> getLIMSResultByManifestRecordIdAndSampleId(Integer  manifestId,  String sampleId);
+
+    @Query(value = "SELECT  CASE WHEN COUNT(*) > 0 THEN true ELSE false END FROM  laboratory_result  WHERE   test_id =:testId and archived = 0", nativeQuery = true)
+    boolean existsByTestId(@Param("testId") Integer testId);
 
     @Modifying
     @Transactional
@@ -53,12 +56,29 @@ public interface LimsResultRepository extends JpaRepository<LIMSResult, Integer>
             @Param("testId") Integer  testId
     );
 
-
-
-
-
-
-
+    @Modifying
+    @Query(value = "INSERT INTO laboratory_result (" +
+            "uuid,facility_id, test_id,patient_id, patient_uuid, result_report, result_reported, date_assayed, " +
+            "date_result_reported, date_result_received, created_by, " +
+            "modified_by, date_created, date_modified, pcr_lab_sample_number, " +
+            "approved_by, archived, date_approved) " +
+            "VALUES (:uuid, :facilityId, :testId, :patientId, :patientUuid, :testResult, :testResult, :assayDate, " +
+            ":reportedDate, NOW(), 'lims', 'lims', NOW(), NOW(), " +
+            ":pcrLabSampleNumber, :approvedBy, 0, :dateResultDispatched)",
+            nativeQuery = true)
+    void insertLabResultNative(
+            @Param("uuid") String uuid,
+            @Param("facilityId") long  facilityId,
+            @Param("testId") Integer testId,
+            @Param("patientId") Integer  patientId,
+            @Param("patientUuid") String  patientUuid,
+            @Param("testResult") String testResult,
+            @Param("reportedDate") LocalDateTime reportedDate,
+            @Param("assayDate") LocalDateTime assayDate,
+            @Param("dateResultDispatched") LocalDateTime dateResultDispatched,
+            @Param("pcrLabSampleNumber") String pcrLabSampleNumber,
+            @Param("approvedBy") String approvedBy
+    );
 
 
 

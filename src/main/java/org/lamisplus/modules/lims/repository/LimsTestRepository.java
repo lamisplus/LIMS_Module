@@ -1,7 +1,9 @@
 package org.lamisplus.modules.lims.repository;
 
+import liquibase.pro.packaged.I;
 import org.lamisplus.modules.lims.domain.entity.LIMSTest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,6 +24,14 @@ public interface LimsTestRepository extends JpaRepository<LIMSTest, Integer> {
 
     @Query(value="select * from laboratory_test where id=:testId AND archived = 0", nativeQuery = true)
     LIMSTest findByTestId(@Param("testId") Integer testId);
+
+    @Modifying
+    @Query(value = "UPDATE laboratory_test SET lab_test_order_status = 5 WHERE id = :id", nativeQuery = true)
+    void updateLabTestOrderStatusToFive(@Param("id") Integer id);
+
+
+
+
 
     @Query(value="select count(test_id) > 0 from laboratory_result where test_id=:testId", nativeQuery = true)
     boolean findResultByTestId(@Param("testId") Integer testId);

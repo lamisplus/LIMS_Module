@@ -11,13 +11,12 @@ import org.lamisplus.modules.lims.repository.LimsResultRepository;
 import org.lamisplus.modules.lims.repository.LimsTestRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -29,28 +28,29 @@ public class LimsResultService {
     private final LimsManifestRepository manifestRepository;
     private final LimsTestRepository testRepository;
     private final LimsMapper limsMapper;
+    private final CurrentFacility currentFacility;
 
 
     public LIMSResult Save(LIMSResult result, String hospitalNumber) {
-        Optional<String> personUuid = testRepository.getPersonUuidByHospitalNum(hospitalNumber);
-        if (!personUuid.isPresent()) {
-            throw new RuntimeException("Person UUID not found with give hospitalNumber   " + hospitalNumber);
+        LOG.info("Transaction Name: {}", TransactionSynchronizationManager.getCurrentTransactionName());
+        String personUuid = testRepository.getPersonUuidByHospitalNum(hospitalNumber)
+                .orElseThrow(() -> new RuntimeException("Person UUID not found with hospital number: " + hospitalNumber));
+
+        if (result.getTestResult().isEmpty()) {
+            return null;
         }
-        if (result.getTestResult().length() > 0) {
-            result.setUuid(UUID.randomUUID().toString());
-            SaveResultInLabModule(result, personUuid.get());
-            LOG.info("SAVING RESULT: Result saved successfully in Lab Module");
-            List<LIMSResult> previousResult =
-                    limsResultRepository.getLIMSResultByManifestRecordIdAndSampleId(result.getManifestRecordID(), result.getSampleID());
-            if (previousResult.isEmpty()) {
-                return limsResultRepository.save(result);
-            } else {
-                return result;
-            }
-        } else {
-            LOG.info("SAVING RESULT: Result not saved, object has no result value");
-            return result;
+        result.setUuid(UUID.randomUUID().toString());
+        boolean isSaved = saveResultInLabModule(result, personUuid);
+
+        if (!isSaved) {
+            LOG.info("SAVING RESULT: Result not saved, sample has no result value");
+            return null;
         }
+        LOG.info("SAVING RESULT: Result saved successfully in Lab Module");
+        List<LIMSResult> previousResult = limsResultRepository
+                .getLIMSResultByManifestRecordIdAndSampleId(result.getManifestRecordID(), result.getSampleID());
+
+        return previousResult.isEmpty() ? limsResultRepository.save(result) : result;
     }
 
 
@@ -74,29 +74,54 @@ public class LimsResultService {
         return dto;
     }
 
-    @Transactional(value = "limsTransactionManger", propagation = Propagation.REQUIRES_NEW)
-    public void SaveResultInLabModule(LIMSResult result, String personUuid) {
-        try {
-            boolean testIdExists = result.getTestID() != null;
-            String testResult = result.getTestResult();
-            testResult = extractCopyNumber(testResult);
 
+    public boolean saveResultInLabModule(LIMSResult result, String personUuid) {
+        try {
+            String processedTestResult = extractCopyNumber(result.getTestResult());
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            if (testIdExists) {
-                Integer testID = result.getTestID();
-                updateResultFields(result, testID, testResult, formatter);
-            } else {
-                LIMSTest test = testRepository.findBySampleIdAndPersonUuid(result.getSampleID(), personUuid).orElse(null);
-                if (test != null) {
-                    Integer labTestId = test.getLabTestId();
-                    updateResultFields(result, labTestId, testResult, formatter);
-                } else {
-                    throw new RuntimeException("Lab Test not found with given PersonUUId   " + personUuid);
-                }
-            }
+
+            return processTestResult(result, personUuid, processedTestResult, formatter);
         } catch (Exception exception) {
-            LOG.info("ERROR SAVING RESULT IN LAB MODULE: " + exception.getMessage());
+            LOG.error("Error saving result in lab module: {}", exception.getMessage());
+            return false;
         }
+    }
+
+    private boolean processTestResult(LIMSResult result, String personUuid, String testResult, DateTimeFormatter formatter) {
+        if (result.getTestID() != null) {
+            return handleExistingTest(result, personUuid, testResult, formatter);
+        }
+        return handleNewTest(result, personUuid, testResult, formatter);
+    }
+
+    private boolean handleExistingTest(LIMSResult result, String personUuid, String testResult, DateTimeFormatter formatter) {
+        Integer testId = result.getTestID();
+        LIMSTest limsTest = testRepository.findByTestId(testId);
+        Integer patientId = limsTest.getPatientId();
+        if (limsResultRepository.existsByTestId(testId)) {
+            updateResultFields(result, testId, testResult, formatter);
+        } else {
+            LOG.info("No result instance found with test_id {}", testId);
+            insertLabResult(patientId, personUuid, result, testId, testResult, formatter);
+        }
+        testRepository.updateLabTestOrderStatusToFive(limsTest.getId());
+        return true;
+    }
+
+    private boolean handleNewTest(LIMSResult result, String personUuid, String testResult, DateTimeFormatter formatter) {
+        LIMSTest test = testRepository.findBySampleIdAndPersonUuid(result.getSampleID(), personUuid)
+                .orElseThrow(() -> new RuntimeException("Lab Test not found for PersonUUID: " + personUuid));
+        Integer patientId = test.getPatientId();
+        Integer labTestId = test.getLabTestId();
+        if (limsResultRepository.existsByTestId(labTestId)) {
+            updateResultFields(result, labTestId, testResult, formatter);
+        } else {
+            LOG.info("No result instance found with test_id {}", labTestId);
+            insertLabResult(patientId, personUuid, result, labTestId, testResult, formatter);
+        }
+        //update test order status
+        testRepository.updateLabTestOrderStatusToFive(test.getId());
+        return true;
     }
 
 
@@ -114,6 +139,29 @@ public class LimsResultService {
                 pcrLabSampleNumber,
                 approvedBy,
                 testId
+        );
+    }
+
+    public void insertLabResult(Integer patientId, String personUuid, LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
+        LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
+        LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
+        LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
+        String pcrLabSampleNumber = result.getPcrLabSampleNumber();
+        String approvedBy = result.getApprovedBy();
+        String labResultUuid = UUID.randomUUID().toString();
+        long facilityId = currentFacility.getCurrentUserOrganization();
+        limsResultRepository.insertLabResultNative(
+                labResultUuid,
+                facilityId,
+                testId,
+                patientId,
+                personUuid,
+                testResult,
+                reportedDate,
+                assayDate,
+                dateResultDispatched,
+                pcrLabSampleNumber,
+                approvedBy
         );
     }
 
