@@ -96,11 +96,11 @@ class PatientResult extends React.Component {
                   </tr>
                   <tr>
                     <th>Unique Client No.</th>
-                    <td>{samples.patientID?.[1]?.idNumber || ""}</td>
+                    <td>{samples.patientID?.[2]?.idNumber || ""}</td>
                     <th>Hospital Number</th>
                     <td>{samples.patientID?.[0]?.idNumber || ""}</td>
                     <th>Test Number</th>
-                    <td>{samples.patientID?.[2]?.idNumber || ""}</td>
+                    <td>{samples.patientID?.[1]?.idNumber || ""}</td>
                   </tr>
                   <tr>
                     <th>Facility</th>
@@ -204,7 +204,7 @@ class PatientResult extends React.Component {
                     <td>{samples.dateResultDispatched}</td>
                   </tr>
                   <tr>
-                    <th>Assay by</th>
+                    <th>Assayed by</th>
                     <td>{samples.approvedBy}</td>
                     <th>Assayed Date</th>
                     <td>{samples.assayDate}</td>
