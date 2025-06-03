@@ -26,33 +26,6 @@ const transferStatus = (status) => {
   }
 };
 
-// const vl_indictaion = (value) => {
-//   switch (parseInt(value)) {
-//     case 300:
-//       return <p>"Baseline (6 months after ART initiation)""</p>;
-//     case 1394:
-//       return <p>Baseline (At ART Initiation)</p>;
-//     case 297:
-//       return <p>Clinical failure</p>;
-//     case 302:
-//       return (
-//         <p>Confirmation (3-6 months after intense adherence counselling)</p>
-//       );
-//     case 719:
-//       return <p>Confirmation for recent infection</p>;
-//     case 305:
-//       return <p>Immunologic failure</p>;
-//     case 306:
-//       return <p>PMTCT 32-36 Weeks Gestation</p>;
-//     case 301:
-//       return <p>Routine (every 12 months)</p>;
-//     case 303:
-//       return <p>Routine</p>;
-//     default:
-//       return <p>Routine </p>;
-//   }
-// };
-
 class PatientResult extends React.Component {
   render() {
     const { samples } = this.props;
@@ -194,13 +167,13 @@ class PatientResult extends React.Component {
                   <tr>
                     <th>Ordered by</th>
                     <td>{samples.sampleOrderedBy}</td>
-                    <th>Date</th>
+                    <th>Ordered Date</th>
                     <td>{samples.sampleOrderDate}</td>
                   </tr>
                   <tr>
                     <th>Tested by</th>
                     <td>{samples.testedBy}</td>
-                    <th>Date</th>
+                    <th>Tested Date</th>
                     <td>{samples.dateResultDispatched}</td>
                   </tr>
                   <tr>
