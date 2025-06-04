@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.lamisplus.modules.lims.domain.dto.*;
 import org.lamisplus.modules.lims.service.LimsManifestService;
 import org.lamisplus.modules.patient.domain.dto.PersonMetaDataDto;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -63,6 +60,9 @@ public class LimsManifestController {
 
     @GetMapping("/manifest-samples-info-by-sampleid/{sampleId}")
     public AllManifestDto getSamplesInformationBySampleId(@PathVariable String sampleId) {
+        if(sampleId.contains("-")) {
+            sampleId = sampleId.replace("-", "/");
+        }
         return limsManifestService.getSingleSampleInformationBySampleId(sampleId);
     }
 }

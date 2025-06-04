@@ -94,9 +94,53 @@ const PrintManifest = (props) => {
 
   const toggleModal = () => setOpen(!open);
 
+  const pageStyle = `@media print {
+                  body {
+                    background: white;
+                    margin: 0;
+                    padding: 0;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                    font-size: 12px;
+                  }
+
+                  .result-container {
+                    box-shadow: none;
+                    max-width: 100%;
+                    padding: 0;
+                    margin: 0;
+                  }
+
+                  .report-header {
+                    margin-bottom: 10px;
+                  }
+
+                  .section {
+                    margin-bottom: 10px;
+                    border: 1px solid #014d88;
+                    page-break-inside: avoid;
+                  }
+
+                  /* .report-table th {
+                    background-color: #014d88 !important;
+                    color: white !important;
+                  } */
+
+                  .report-table td,
+                  .report-table th {
+                    padding: 5px;
+                  }
+
+                  @page {
+                    size: A4 portrait;
+                    margin: 10mm;
+                  }
+            }`;
+
   const componentRef = useRef();
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
+    pageStyle
   });
 
   useEffect(() => {

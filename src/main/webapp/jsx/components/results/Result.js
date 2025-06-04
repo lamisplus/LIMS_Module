@@ -1,9 +1,8 @@
 import React, { useEffect, useCallback, useState, useRef } from "react";
 import { Link, useHistory } from "react-router-dom";
-import { Card } from "react-bootstrap";
+import { Card, ProgressBar } from "react-bootstrap";
 
 import MatButton from "@material-ui/core/Button";
-import HomeIcon from "@mui/icons-material/Home";
 import Alert from "react-bootstrap/Alert";
 import AddResultModal from "./AddResultModal";
 
@@ -18,7 +17,6 @@ import { token, url } from "../../../api";
 import { makeStyles } from "@material-ui/core/styles";
 
 import ReplyIcon from "@mui/icons-material/Reply";
-import { useReactToPrint } from "react-to-print";
 import AddIcon from "@mui/icons-material/Add";
 import PrintResults from "./PrintResults";
 
@@ -89,9 +87,9 @@ const Result = (props) => {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const [results, setResults] = useState([]);
-
+  const [getResult, setGetResult] = useState([]);
   const [open, setOpen] = useState(false);
-
+  const [percentage, setPercentage] = useState(0);
   const handleOpen = () => setOpen(true);
 
   const toggleModal = () => setOpen(!open);
@@ -114,21 +112,24 @@ const Result = (props) => {
 
   const componentRef = useRef();
 
-  const loadResults = useCallback(async () => {
-    try {
-      const response = await axios.get(
-        `${url}lims/results/manifests/${manifestObj.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setResults(response.data.results);
-      setLoading(false);
-    } catch (e) {
-      setLoading(false);
-    }
-  }, [manifestObj.id]);
+  // const loadResults = useCallback(async () => {
+  //   try {
+  //     setPercentage(10);
+  //     const response = await axios.get(
+  //       `${url}lims/results/manifests/${manifestObj.id}`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     setResults(response.data.results);
+  //     console.log("gh", response.data.results);
+  //     setLoading(false);
+  //   } catch (e) {
+  //     setLoading(false);
+  //   }
+  // }, [manifestObj.id]);
 
   const getPCResults = useCallback(async () => {
     try {
+      setPercentage(30);
       const serverId = JSON.parse(localStorage.getItem("configId"));
       setResults([]);
       if (manifestObj.id !== 0) {
@@ -137,10 +138,10 @@ const Result = (props) => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        console.log("lims", response.data.viralLoadTestReport);
         if (response.data.viralLoadTestReport !== null) {
+          setPercentage(40);
           setResults(response.data.viralLoadTestReport);
-
+          let limsResult = [];
           response.data.viralLoadTestReport.forEach((d) => {
             if (d.approvalDate !== "" && d.testResult !== "") {
               let result = {
@@ -166,16 +167,28 @@ const Result = (props) => {
                 sendingPCRLabID: d.sendingPCRLabID,
                 sendingPCRLabName: d.sendingPCRLabName,
               };
-              console.log("payload", result);
-              axios
-                .post(`${url}lims/results`, [result], {
-                  headers: { Authorization: `Bearer ${token}` },
-                })
-                .then((resp) => {
-                  //console.log("results saved", resp)
-                });
+
+              limsResult.push(result);
+
+              //SyncResults(d);
+              // axios
+              //   .post(`${url}lims/results`, [result], {
+              //     headers: { Authorization: `Bearer ${token}` },
+              //   })
+              //   .then((resp) => {
+              //     //console.log("results saved", resp)
+              //   });
             }
           });
+          //
+          // axios
+          //   .post(`${url}lims/results`, limsResult, {
+          //     headers: { Authorization: `Bearer ${token}` },
+          //   })
+          //   .then((resp) => {
+          //     console.log("results saved", resp);
+          //   })
+          //   .catch((err) => console.log(err));
         }
       } else {
         toast.success(
@@ -193,17 +206,103 @@ const Result = (props) => {
 
   useEffect(() => {
     loadConfig();
-    loadResults();
+    // loadResults();
     getPCResults();
-  }, [loadConfig, loadResults, getPCResults]);
+  }, [loadConfig, getPCResults]);
 
   const reload = (e) => {
     getPCResults();
   };
 
-  // const handlePrint = useReactToPrint({
-  //   content: () => componentRef.current,
-  // });
+  // const SyncResults = async (result) => {
+  //   setPercentage(50);
+  //   let sampleID = result.sampleID;
+
+  //   if (sampleID.includes("/")) {
+  //     sampleID = result.sampleID?.replace("/", "_");
+  //   }
+
+  //   //get samples tied to a user
+  //   await axios
+  //     .get(`${url}lims/results/sample/${sampleID}`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     })
+  //     .then((res) => {
+  //       setPercentage(70);
+  //       axios
+  //         .get(`${url}laboratory/vl-results/patients/${res.data.patientId}`, {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //         })
+  //         .then((res) => {
+  //           setPercentage(80);
+  //           let sampleData = res.data.filter(
+  //             (data) => data?.sampleNumber === sampleID?.replace("_", "/")
+  //           )[0];
+
+  //           //console.log(sampleData);
+
+  //           updateResultsHIV(sampleData, result);
+  //         });
+  //     })
+  //     .catch((err) => console.error(err));
+  // };
+
+  // const updateResultsHIV = (sampleData, result) => {
+  //   setPercentage(90);
+  //   let sampleResult = {
+  //     id: sampleData.id,
+  //     orderId: sampleData.orderId,
+  //     visitId: result.visitId,
+  //     patientId: sampleData.patientId,
+  //     labNumber: sampleData.labNumber,
+  //     sampleNumber: sampleData.sampleNumber,
+  //     sampleCollectionDate: sampleData.sampleCollectionDate,
+  //     sampleCollectedBy: sampleData.sampleCollectedBy,
+  //     dateResultReceived: `${result.dateResultDispatched} 00:00:00`,
+  //     result: result.testResult,
+  //     resultReportedBy: sampleData.resultReportedBy,
+  //     dateResultReported: `${result.dateResultDispatched} 00:00:00`,
+  //     checkedBy: sampleData.checkedBy,
+  //     dateChecked: sampleData.dateChecked,
+  //     comments: sampleData.comments,
+  //     clinicianName: sampleData.clinicianName,
+  //     viralLoadIndication: sampleData.viralLoadIndication,
+  //     sampleTypeId: sampleData.sampleTypeId,
+  //     sampleTypeName: sampleData.sampleTypeName,
+  //     pcrLabName: sampleData.pcrLabName,
+  //     pcrLabSampleNumber: result.pcrLabSampleNumber,
+  //     sampleLoggedRemotely: sampleData.sampleLoggedRemotely,
+  //     dateSampleLoggedRemotely: sampleData.dateSampleLoggedRemotely,
+  //     dateReceivedAtPcrLab: `${result.dateSampleReceivedAtPCRLab} 00:00:00`,
+  //     orderBy: sampleData.orderBy,
+  //     dateOrderBy: sampleData.dateOrderBy,
+  //     assayedBy: sampleData.assayedBy,
+  //     dateAssayedBy: result.assayDate,
+  //     approvedBy: result.approvedBy,
+  //     dateApproved: result.approvalDate,
+  //     labTestGroupName: sampleData.labTestGroupName,
+  //     labTestName: sampleData.labTestName,
+  //     dateAssayed: result.assayDate,
+  //     viralLoadIndicationName: sampleData.viralLoadIndicationName,
+  //     collectedBy: sampleData.collectedBy,
+  //     dateCollectedBy: sampleData.dateCollectedBy,
+  //     labTestOrderStatus: sampleData.labTestOrderStatus,
+  //     labTestOrderStatusName: sampleData.labTestOrderStatusName,
+  //     labOrderIndication: sampleData.labOrderIndication,
+  //     orderedDate: sampleData.orderedDate,
+  //     testResult: result.testResult,
+  //     dateCheckedBy: sampleData.dateCheckedBy,
+  //   };
+  // axios
+  //     .put(`${url}laboratory/vl-results/${sampleData?.id}`, sampleResult, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     })
+  //     .then((res) => {
+  //       //console.log(res);
+  //       setPercentage(100);
+  //     })
+  //     .then((rep) => setPercentage(0));
+  // };
 
   return (
     <div>
@@ -217,7 +316,7 @@ const Result = (props) => {
             " "
           )}
           <p style={{ textAlign: "right" }}>
-            <MatButton
+            {/* <MatButton
               variant="contained"
               color="dark"
               className={classes.button}
@@ -225,7 +324,7 @@ const Result = (props) => {
               onClick={handleOpen}
             >
               Add Result
-            </MatButton>
+            </MatButton> */}
             <MatButton
               variant="contained"
               color="success"
@@ -235,15 +334,6 @@ const Result = (props) => {
             >
               Refresh
             </MatButton>
-            {/* <MatButton
-              variant="contained"
-              color="success"
-              className={classes.button}
-              startIcon={<PrintIcon />}
-              onClick={handlePrint}
-            >
-              Print
-            </MatButton> */}
 
             <Link color="inherit" to={{ pathname: "/" }}>
               <MatButton
@@ -262,6 +352,12 @@ const Result = (props) => {
           <hr />
           {
             <>
+              {/* {percentage > 0 && (
+                <>
+                  <p>Syncing records to patient records</p>
+                  <ProgressBar now={percentage} active />
+                </>
+              )} */}
               <Alert
                 style={{
                   width: "100%",

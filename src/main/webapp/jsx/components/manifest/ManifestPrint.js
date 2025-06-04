@@ -1,6 +1,6 @@
 import React from "react";
 import { logo } from "../SampleCollection/pcr";
-
+import "../../../css/manifest.css";
 import { Row, Card, CardBody, Table, Badge } from "reactstrap";
 
 let today = new Date().toLocaleDateString("en-us", {
@@ -103,12 +103,13 @@ class ManifestPrint extends React.Component {
             <Table striped bordered size="sm" style={print}>
               <thead style={{ backgroundColor: "#014d88", color: "#fff" }}>
                 <tr>
+                  <th>S/N</th>
                   <th>Facility</th>
-                  <th>Patient ID</th>
+                  <th>Hospital ID</th>
                   <th>Name</th>
                   <th>Age</th>
                   <th>Sex</th>
-                  <th>Sample ID</th>
+                  <th>Phlebotomy No</th>
                   <th>Sample Type</th>
                   <th>Date Collected</th>
                 </tr>
@@ -117,6 +118,7 @@ class ManifestPrint extends React.Component {
                 {this.props.sampleObj.sampleInformation &&
                   this.props.sampleObj.sampleInformation.map((data, i) => (
                     <tr key={i}>
+                      <td>{i + 1}</td>
                       <td>{this.props.sampleObj.sendingFacilityName}</td>
 
                       <td>{data.patientID[0].idNumber}</td>

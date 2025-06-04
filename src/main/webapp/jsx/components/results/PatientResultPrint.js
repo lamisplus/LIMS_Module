@@ -4,16 +4,9 @@ import { Link, useHistory, useLocation } from "react-router-dom";
 import { Card } from "react-bootstrap";
 
 import MatButton from "@material-ui/core/Button";
-import HomeIcon from "@mui/icons-material/Home";
-import Alert from "react-bootstrap/Alert";
-import AddResultModal from "./AddResultModal";
-
 import "../SampleCollection/sample.css";
 
-import CachedIcon from "@mui/icons-material/Cached";
-
 import axios from "axios";
-import { toast } from "react-toastify";
 import { token, url } from "../../../api";
 
 import { makeStyles } from "@material-ui/core/styles";
@@ -85,23 +78,117 @@ const PatientResultPrint = (props) => {
 
   const patientResults = location && location.state ? location.state.data : {};
 
-  //console.log(patientResults)
+  //console.log(patientResults);
 
   const [patientInfo, setPatientInfo] = useState({});
 
+  const pageStyle = `@media print {
+                    body {
+                      background: white;
+                      margin: 0;
+                      padding: 0;
+                      -webkit-print-color-adjust: exact;
+                      print-color-adjust: exact;
+                      font-size: 14px;
+                    }
+
+                    .result-container {
+                      box-shadow: none;
+                      max-width: 100%;
+                      padding: 0;
+                      margin: 0;
+                    }
+
+                    .report-header {
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      border-bottom: 2px solid #014d88;
+                      padding-bottom: 8px;
+                      margin-bottom: 15px;
+                    }
+
+                    .header-text {
+                      flex: 1;
+                    }
+
+                    .report-title {
+                      font-size: 18px;
+                      font-weight: 600;
+                      color: #014d88;
+                      margin: 0;
+                    }
+
+                    .report-subtitle {
+                      font-size: 14px;
+                      color: #666;
+                    }
+
+                    .report-logo img {
+                      width: 60px;
+                      height: auto;
+                      object-fit: contain;
+                    }
+
+                    .section {
+                      margin-bottom: 10px;
+                      border: 1px solid #014d88;
+                      page-break-inside: avoid;
+                    }
+
+                    /* .report-table th {
+                      background-color: #014d88 !important;
+                      color: white !important;
+                    } */
+
+                    .report-table {
+                      width: 100%;
+                      border-collapse: collapse;
+                      font-size: 12px;
+                      margin-top: 5px;
+                    }
+
+                    .report-table th,
+                    .report-table td {
+                      padding: 6px 8px;
+                      border: 1px solid #ccc;
+                      text-align: left;
+                      vertical-align: middle;
+                    }
+
+                    .report-footer {
+                      text-align: right;
+                      font-size: 10px;
+                      color: #666;
+                      margin-top: 20px;
+                      page-break-inside: avoid;
+                    }
+
+                    @page {
+                      size: A4 portrait;
+                      margin: 10mm;
+                    }
+              }`;
   const componentRef = useRef();
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
+    pageStyle,
   });
 
   const loadInfo = useCallback(async () => {
+    let manifestSampleId = null;
     try {
+      if (patientResults?.sampleID?.includes("/")) {
+        manifestSampleId = patientResults?.sampleID?.replace(/\//g, "-");
+      } else {
+        manifestSampleId = patientResults?.sampleID;
+      }
       const response = await axios.get(
-        `${url}lims/manifest-samples-info-by-sampleid/${patientResults.sampleID}`,
+        `${url}lims/manifest-samples-info-by-sampleid/${manifestSampleId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log(response);
+      //console.log(response);
       setPatientInfo(response.data);
     } catch (e) {
       console.err(e);

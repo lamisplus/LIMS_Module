@@ -1,0 +1,16 @@
+/* Print-specific formatting */
+@media print {
+  body {
+    background: white;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-size: 11px;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+}
