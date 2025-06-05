@@ -70,7 +70,9 @@
 ## Authors & Acknowledgments
 ### Main contributors
 - Victor Ajor   https://github.com/AJ-DataFI
+
 - Mathew Adegbite https://github.com/mathewade 
+
 
 ## Special mentions
 - Aniwange Tertese Amos https://github.com/aniwange33
