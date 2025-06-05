@@ -1,6 +1,6 @@
 import React from "react";
 import { logo } from "../SampleCollection/pcr";
-
+import "../../../css/manifest.css";
 import { Row, Card, CardBody, Table, Badge } from "reactstrap";
 
 let today = new Date().toLocaleDateString("en-us", {

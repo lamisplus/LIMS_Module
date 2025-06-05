@@ -12,7 +12,7 @@ public class LIMSSampleDTO {
     private String surName;
     private String Sex;
     private String pregnantBreastFeedingStatus;
-    private String Age;
+    private String age;
     private String dateOfBirth;
     private String sampleID;
     private String sampleType;
