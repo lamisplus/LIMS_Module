@@ -314,12 +314,16 @@ public class LimsManifestService {
                             JsonNode entry = patientIDs.get(i);
                             if ("CLIENTID".equals(entry.path("idTypeCode").asText())) {
                                 testID = entry.path("idNumber").asText();
-                                result.setTestID(Integer.valueOf(testID));
-                                break;
+                                if ((testID != null) && !testID.trim().isEmpty()) {
+                                    result.setTestID(Integer.valueOf(testID));
+                                    break;
+                                }
+
                             }
                         }
                     }
                     String hospitalNumber = getHospitalNumber(patientIDs);
+//                    System.out.println(result.toString());
                     resultService.Save(limsMapper.toResult(result), hospitalNumber);
                 }
             }
@@ -463,9 +467,11 @@ public class LimsManifestService {
         AllManifestDto allManifestDto = new AllManifestDto();
         Optional<LIMSSample> limsSamples = sampleRepository.findLIMSSampleBySampleID(manifestSampleId);
         if (limsSamples.isPresent()) {
+//            System.out.println(" in A--");
             LIMSSample limsSample = limsSamples.get();
             Optional<LIMSManifest> limsManifests = limsManifestRepository.findById(limsSample.getManifestRecordID());
             if (limsManifests.isPresent()) {
+//                System.out.println(" in B--");
                 LIMSManifest limsManifest = limsManifests.get();
                 allManifestDto.setLocalManifestId(limsManifest.getId());
                 allManifestDto.setManifestID(limsManifest.getManifestID());
@@ -507,6 +513,7 @@ public class LimsManifestService {
 
             Optional<LIMSResult> limsResults = this.resultRepository.getLIMSResultBySampleID(limsSample.getSampleID());
             if (limsResults.isPresent()) {
+//                System.out.println(" in C--");
                 allManifestDto.setResultIsBack(Boolean.TRUE);
                 LIMSResult limsResult = limsResults.get();
                 allManifestDto.setLocalResultId(limsResult.getId());

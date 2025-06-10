@@ -54,7 +54,7 @@ public interface LimsSampleRepository extends JpaRepository<LIMSSample, Integer>
     Page<LIMSSample> findPendingVLSamples(Long facilityId, Pageable pageable);
 
 
-
+    @Query(value="SELECT * FROM lims_sample WHERE sample_id = ?1 order by id desc limit 1", nativeQuery = true)
     Optional<LIMSSample> findLIMSSampleBySampleID(String sampleId);
 
 }
