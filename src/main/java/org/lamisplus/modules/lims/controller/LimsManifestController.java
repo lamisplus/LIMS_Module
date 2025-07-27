@@ -41,9 +41,9 @@ public class LimsManifestController {
         return limsManifestService.findAllManifests(searchParam, pageNo, pageSize);
     }
 
-    @GetMapping("/ready-manifests/{id}/{configId}")
-    public LIMSManifestResponseDTO PostManifestsToLIMSServer(@PathVariable int id, @PathVariable int configId) {
-        return limsManifestService.PostManifestToServer(id, configId);
+    @PostMapping("/ready-manifests/{id}/{configId}")
+    public LIMSManifestResponseDTO PostManifestsToLIMSServer(@PathVariable int id, @PathVariable int configId, @RequestBody FacilityRequest request) {
+        return limsManifestService.PostManifestToServer(id, configId, request);
     }
 
     @GetMapping("/manifest-results/{id}/{configId}")

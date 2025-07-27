@@ -182,7 +182,7 @@ public class LimsManifestService {
         }
     }
 
-    public LIMSManifestResponseDTO PostManifestToServer(int id, int configId) {
+    public LIMSManifestResponseDTO PostManifestToServer(int id, int configId, FacilityRequest request) {
         RestTemplate restTemplate = GetRestTemplate();
         HttpHeaders headers = GetHTTPHeaders();
         LIMSConfig config = limsConfigRepository.findById(configId).orElse(null);
@@ -193,7 +193,7 @@ public class LimsManifestService {
         LIMSLoginResponseDTO loginResponseDTO = LoginToLIMS(restTemplate, headers, config);
 
         //Post request
-        LIMSManifestResponseDTO response = PostManifestRequest(restTemplate, headers, loginResponseDTO, id, config);
+        LIMSManifestResponseDTO response = PostManifestRequest(restTemplate, headers, loginResponseDTO, id, config, request);
 
         //Update manifest status
         LIMSManifest dto = limsManifestRepository.findById(id).orElse(null);
@@ -201,9 +201,14 @@ public class LimsManifestService {
         assert dto != null;
         dto.setManifestStatus("Submitted");
 
-        if (config.getTestFacilityDATIMCode().length() > 1) {
-            dto.setSendingFacilityID(config.getTestFacilityDATIMCode());
-            dto.setSendingFacilityName(config.getTestFacilityName());
+        if (request != null) {
+            dto.setSendingFacilityID(request.getDatimCode());
+            dto.setSendingFacilityName(request.getFacilityName());
+        }else{
+            if (config.getTestFacilityDATIMCode().length() > 1) {
+                dto.setSendingFacilityID(config.getTestFacilityDATIMCode());
+                dto.setSendingFacilityName(config.getTestFacilityName());
+            }
         }
 
         limsManifestRepository.save(dto);
@@ -244,12 +249,17 @@ public class LimsManifestService {
         return headers;
     }
 
-    private LIMSManifestResponseDTO PostManifestRequest(RestTemplate restTemplate, HttpHeaders headers, LIMSLoginResponseDTO loginResponseDTO, int ManifestId, LIMSConfig config) {
+    private LIMSManifestResponseDTO PostManifestRequest(RestTemplate restTemplate, HttpHeaders headers, LIMSLoginResponseDTO loginResponseDTO, int ManifestId, LIMSConfig config, FacilityRequest request) {
         LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(ManifestId));
 
-        if (config.getTestFacilityDATIMCode().length() > 1) {
-            manifest.setSendingFacilityID(config.getTestFacilityDATIMCode());
-            manifest.setSendingFacilityName(config.getTestFacilityName());
+        if (request != null) {
+            manifest.setSendingFacilityID(request.getDatimCode());
+            manifest.setSendingFacilityName(request.getFacilityName());
+        }else {
+            if (config.getTestFacilityDATIMCode().length() > 1) {
+                manifest.setSendingFacilityID(config.getTestFacilityDATIMCode());
+                manifest.setSendingFacilityName(config.getTestFacilityName());
+            }
         }
 
         LIMSManifestRequestDTO requestDTO = new LIMSManifestRequestDTO();

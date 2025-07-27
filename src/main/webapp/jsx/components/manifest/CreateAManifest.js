@@ -100,6 +100,11 @@ const CreateAManifest = (props) => {
 
   const [errors, setErrors] = useState({});
 
+  const [datim, setDatim] = useState({
+    datimCode: "",
+    facilityName: "",
+  });
+
   const [open, setOpen] = useState(false);
 
   const handleOpen = () => setOpen(true);
@@ -113,6 +118,32 @@ const CreateAManifest = (props) => {
   const confirmStatusPrevious = (status) => {
     props.setPrevious(status);
   };
+
+  const getFacilityDatim = useCallback(async () => {
+    try {
+      let org_unit = JSON.parse(localStorage.getItem("user_account"));
+      const facilityId = org_unit.currentOrganisationUnitId;
+
+      const response = await axios.get(
+        `${url}organisation-units/v2/${facilityId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.status === 200) {
+        const { organisationUnitIdentifiers, name } = response.data;
+        setDatim({
+          datimCode: organisationUnitIdentifiers[0].code,
+          facilityName: name,
+        });
+      }
+    } catch (e) {
+      toast.error("An error occurred while fetching facility datim", {
+        position: toast.POSITION.TOP_RIGHT,
+      });
+    }
+  }, []);
 
   const loadConfig = useCallback(async () => {
     try {
@@ -145,6 +176,7 @@ const CreateAManifest = (props) => {
   }, []);
 
   useEffect(() => {
+    getFacilityDatim();
     loadConfig();
     pcrLab();
     const collectedSamples = JSON.parse(localStorage.getItem("samples"));
@@ -235,13 +267,13 @@ const CreateAManifest = (props) => {
 
   const readyManifest = (url, id, serverId, token, timer) => {
     axios
-      .get(`${url}lims/ready-manifests/${id}/${serverId}`, {
+      .post(`${url}lims/ready-manifests/${id}/${serverId}`, datim, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((resp) => {
         console.log("ready manifests " + resp);
         if (resp) {
-          console.log("sending manifest", resp);
+          //console.log("sending manifest", resp);
           handleProgress(100);
 
           toast.success("Sample manifest sent successfully to PCR Lab.", {
@@ -312,8 +344,9 @@ const CreateAManifest = (props) => {
     const serverId = JSON.parse(localStorage.getItem("configId"));
 
     handleProgress(50);
+    console.log(datim);
     await axios
-      .get(`${url}lims/ready-manifests/${manifestsId}/${serverId}`, {
+      .post(`${url}lims/ready-manifests/${manifestsId}/${serverId}`, datim, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((resp) => {

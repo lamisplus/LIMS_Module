@@ -94,6 +94,37 @@ const ConfigModal = (props) => {
 
   const [configId, setConfigId] = useState(0);
 
+  const [datim, setDatim] = useState({
+    datimCode: "",
+    facilityName: "",
+  });
+
+  const getFacilityDatim = useCallback(async () => {
+    try {
+      let org_unit = JSON.parse(localStorage.getItem("user_account"));
+      const facilityId = org_unit.currentOrganisationUnitId;
+
+      const response = await axios.get(
+        `${url}organisation-units/v2/${facilityId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.status === 200) {
+        const { organisationUnitIdentifiers, name } = response.data;
+        setDatim({
+          datimCode: organisationUnitIdentifiers[0].code,
+          facilityName: name,
+        });
+      }
+    } catch (e) {
+      toast.error("An error occurred while fetching facility datim", {
+        position: toast.POSITION.TOP_RIGHT,
+      });
+    }
+  }, []);
+
   const loadConfig = useCallback(async () => {
     try {
       const response = await axios.get(`${url}lims/config`, {
@@ -111,6 +142,7 @@ const ConfigModal = (props) => {
   }, []);
 
   useEffect(() => {
+    getFacilityDatim();
     loadConfig();
   }, [loadConfig]);
 
@@ -144,12 +176,12 @@ const ConfigModal = (props) => {
     props.togglestatus();
     try {
       await axios
-        .get(`${url}lims/ready-manifests/${manifestsId}/${serverId}`, {
+        .post(`${url}lims/ready-manifests/${manifestsId}/${serverId}`, datim, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((resp) => {
           if (resp) {
-            console.log("sending manifest", resp);
+            //console.log("sending manifest", resp);
             props.handleProgress(100);
 
             toast.success("Sample manifest sent successfully to PCR Lab.", {
@@ -159,19 +191,8 @@ const ConfigModal = (props) => {
             props.submitted(2);
             props.previous(0);
           }
-        })
-        .catch((err) => {
-          clearInterval(timer);
-          console.log("err", err);
-          toast.error("Poor Internet Connection....", {
-            position: toast.POSITION.TOP_RIGHT,
-          });
-
-          props.handleOpen();
         });
     } catch (err) {
-      //props.setFailed(true);
-
       clearInterval(timer);
       toast.error("Error encountered while sending manifest", {
         position: toast.POSITION.TOP_RIGHT,
@@ -190,29 +211,20 @@ const ConfigModal = (props) => {
     try {
       props.handleProgress(50);
       await axios
-        .get(`${url}lims/ready-manifests/${manifestsId}/${serverId}`, {
+        .post(`${url}lims/ready-manifests/${manifestsId}/${serverId}`, datim, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((resp) => {
           props.handleProgress(70);
 
           if (resp) {
-            console.log("re sending manifest", resp);
+            //console.log("re sending manifest", resp);
             props.handleProgress(100);
           }
 
           toast.success("Sample manifest sent successfully to PCR Lab.", {
             position: toast.POSITION.TOP_RIGHT,
           });
-        })
-        .catch((err) => {
-          props.handleProgress(10);
-
-          toast.success("Server currently down!!! Try sending manifest later", {
-            position: toast.POSITION.TOP_CENTER,
-          });
-          props.handleProgress(0);
-          props.handleOpen();
         });
     } catch (err) {
       props.handleProgress(10);
