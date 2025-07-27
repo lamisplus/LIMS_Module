@@ -1,27 +1,27 @@
 ## 📌 Summary
 
-- Ticket: [JIRA-123](https://your-jira-link)
-- Brief: Short description of what this PR does.
-- fixed transfer to multiple units like lab and pharmacy at same time.
+- Ticket: [JIRA-LV3-22](LV3-22)
+- Brief: Improve data exchange for EMR to LIMS.
+- Added a feature for sending data for roving sites.
 
 ## ✨ What’s Changed
 
-- Feature: [e.g., Added login button to header]
-- Refactor: [e.g., Updated AuthContext to support OAuth]
-- Bugfix: [e.g., Fixed missing redirect on logout]
+- Feature: Added provision for roving sites to send manifest
+- Refactor: 
+- Bugfix: 
 
 ## 🧪 Test Instructions
 
 - [ ] Pull this branch
-- [ ] Run `npm start` / `mvn spring-boot:run` / etc.
-- [ ] Navigate to `/login`
-- [ ] Verify login button shows and redirects correctly
+- [ ] Run `mvn clean package`.
+- [ ] Install jar in the core, navigate to `Lims Module`
+- [ ] Verify sending manifest
 
 ## 📋 Checklist
 
-- [ ] Jira issue linked
-- [ ] Code follows conventions
-- [ ] Code is tested (unit/integration)
-- [ ] No sensitive data committed
-- [ ] All tests pass locally
-- [ ] Peer-reviewed or ready for review
+- [x] Jira issue linked
+- [x] Code follows conventions
+- [x] Code is tested (unit/integration)
+- [x] No sensitive data committed
+- [x] All tests pass locally
+- [x] Peer-reviewed or ready for review
