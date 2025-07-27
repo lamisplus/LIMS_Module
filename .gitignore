@@ -69,3 +69,4 @@ node_modules/bowser/.idea/bowser.iml
 gradle/wrapper/gradle-wrapper.properties
 .mvn/wrapper/maven-wrapper.properties
 .idea/misc.xml
+.env
