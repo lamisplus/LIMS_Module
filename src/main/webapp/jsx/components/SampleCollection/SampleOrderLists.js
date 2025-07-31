@@ -60,6 +60,7 @@ const tableIcons = {
 };
 
 const SampleSearch = ({ setSubmitted }) => {
+  const [loading, setLoading] = useState("");
   const [collectedSamples, setCollectedSamples] = useState([]);
   const [filteredSamples, setFilteredSamples] = useState([]);
   const [dateRange, setDateRange] = useState([null, null]);
@@ -68,36 +69,25 @@ const SampleSearch = ({ setSubmitted }) => {
   const startDate = dateRange[0]?.$d || null;
   const endDate = dateRange[1]?.$d || null;
 
-
   const formatDate = (date) => {
     if (!date) return null;
     const inputDate = new Date(date);
     if (isNaN(inputDate.getTime())) return null;
 
-    // Use local timezone formatting to prevent date shifts
-    return format(inputDate, 'yyyy-MM-dd');
+    return format(inputDate, "yyyy-MM-dd");
   };
-
-  // const formatDate = (date) => {
-  //   if (!date) return null;
-  //   const inputDate = new Date(date);
-  //   if (isNaN(inputDate.getTime())) return null;
-  //   return inputDate.toISOString().split("T")[0];
-  // };
 
   const calculateAge = (dob) =>
     dob ? new Date().getFullYear() - new Date(dob).getFullYear() : null;
 
   const loadLabTestData = useCallback(async (start, end) => {
     try {
-      // const startParam = start ? `startDate=${start}&` : "";
-      // const endParam = end ? `endDate=${end}&` : "";
       const params = [];
       if (start) params.push(`startDate=${start}`);
       if (end) params.push(`endDate=${end}`);
       params.push("pageNo=0", "pageSize=100");
       const queryParams = params.join("&");
-     // const queryParams = `${startParam}${endParam}pageNo=0&pageSize=100`;
+      // const queryParams = `${startParam}${endParam}pageNo=0&pageSize=100`;
       const response = await axios.get(
         `${url}lims/lab-samples/pending?${queryParams}`,
         {
@@ -141,19 +131,6 @@ const SampleSearch = ({ setSubmitted }) => {
       }
     }
   }, [startDate, endDate, loadLabTestData]);
-
-
-  // useEffect(() => {
-  //   const formattedStart = formatDate(startDate);
-  //   const formattedEnd = formatDate(endDate);
-  //
-  //   if (!formattedStart && !formattedEnd) {
-  //     setFilteredSamples(collectedSamples);
-  //   } else {
-  //     if (formattedStart && formattedEnd)
-  //       loadLabTestData(formattedStart, formattedEnd);
-  //   }
-  // }, [startDate, endDate, loadLabTestData]);
 
   const handleSampleChanges = (samples) => {
     const transformed = uniq(samples).map((item) => ({
@@ -217,7 +194,7 @@ const SampleSearch = ({ setSubmitted }) => {
             title={
               filteredSamples.length > 0
                 ? "Sample Collection List"
-                : "Loading Viral Load Samples..."
+                : "Empty Sample Collection List"
             }
             tableRef={tableRef}
             columns={[
@@ -253,7 +230,7 @@ const SampleSearch = ({ setSubmitted }) => {
                 hidden: true,
               },
             ]}
-            isLoading={collectedSamples.length === 0}
+            isLoading={loading}
             data={filteredSamples.map((row) => ({
               typecode: row.indicationVLTest,
               patientId: row.hospitalNumber,
