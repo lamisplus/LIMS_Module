@@ -1,5 +1,6 @@
 package org.lamisplus.modules.lims.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 
@@ -33,10 +34,12 @@ public class LIMSResultDTO {
     private String otherRejectionReason;
     private String sendingPcrLabID;
     private String sendingPcrLabName;
-
-    private String Secondary_PCR_Lab_ID;
-    private String Secondary_PCR_Lab_Name;
-    private String Date_Transferred_Out;
+    @JsonProperty("Secondary_PCR_Lab_ID")
+    private String secondary_PCR_Lab_ID;
+    @JsonProperty("Secondary_PCR_Lab_Name")
+    private String secondary_PCR_Lab_Name;
+    @JsonProperty("Date_Transferred_Out")
+    private String date_Transferred_Out;
     private String rejectionReason;
 
     private Integer testID;

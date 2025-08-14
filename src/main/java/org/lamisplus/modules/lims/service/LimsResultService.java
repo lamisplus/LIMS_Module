@@ -30,7 +30,6 @@ public class LimsResultService {
     private final LimsMapper limsMapper;
     private final CurrentFacility currentFacility;
 
-
     public LIMSResult Save(LIMSResult result, String hospitalNumber) {
         LOG.info("Transaction Name: {}", TransactionSynchronizationManager.getCurrentTransactionName());
         String personUuid = testRepository.getPersonUuidByHospitalNum(hospitalNumber)
@@ -53,7 +52,6 @@ public class LimsResultService {
         return previousResult.isEmpty() ? limsResultRepository.save(result) : result;
     }
 
-
     public LIMSResult Update(LIMSResult result, int id) {
         return limsResultRepository.save(result);
     }
@@ -73,7 +71,6 @@ public class LimsResultService {
         dto.setResults(results);
         return dto;
     }
-
 
     public boolean saveResultInLabModule(LIMSResult result, String personUuid) {
         try {
@@ -123,7 +120,6 @@ public class LimsResultService {
         testRepository.updateLabTestOrderStatusToFive(test.getId());
         return true;
     }
-
 
     public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
         LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
@@ -180,21 +176,54 @@ public class LimsResultService {
      * @param resultString The test result string to process
      * @return The extracted numeric value as a string, or null if no valid numeric value found
      */
-    public static String extractNumericValue(String resultString) {
-        if (resultString != null && resultString.equalsIgnoreCase("NotDetected")) {
-            resultString = "0";
-            return resultString;
-        }
+//    public static String extractNumericValue(String resultString) {
+//        if (resultString != null && resultString.equalsIgnoreCase("NotDetected")) {
+//            resultString = "0";
+//            return resultString;
+//        }
+//
+//        if (resultString == null || resultString.isEmpty()) {
+//            return null;
+//        }
+//
+//        StringBuilder numericPart = new StringBuilder();
+//        boolean decimalFound = false;
+//
+//        for (int i = 0; i < resultString.length(); i++) {
+//            char c = resultString.charAt(i);
+//            if (Character.isDigit(c)) {
+//                numericPart.append(c);
+//            } else if (c == '.' && !decimalFound) {
+//                numericPart.append(c);
+//                decimalFound = true;
+//            }
+//        }
+//
+//        if (numericPart.length() == 0 || numericPart.toString().equals(".")) {
+//            return null;
+//        }
+//
+//        return numericPart.toString();
+//    }
 
-        if (resultString == null || resultString.isEmpty()) {
+    public static String extractNumericValue(String resultString) {
+        if (resultString == null || resultString.trim().isEmpty()) {
             return null;
         }
+
+        resultString = resultString.trim();
+
+        if (resultString.equalsIgnoreCase("NotDetected")) {
+            return "0";
+        }
+
+        // Remove comparison symbols <, >, ≤, ≥ and extra spaces
+        resultString = resultString.replaceAll("^[<>]=?|\\s+", "");
 
         StringBuilder numericPart = new StringBuilder();
         boolean decimalFound = false;
 
-        for (int i = 0; i < resultString.length(); i++) {
-            char c = resultString.charAt(i);
+        for (char c : resultString.toCharArray()) {
             if (Character.isDigit(c)) {
                 numericPart.append(c);
             } else if (c == '.' && !decimalFound) {
@@ -207,8 +236,15 @@ public class LimsResultService {
             return null;
         }
 
-        return numericPart.toString();
+        try {
+            double value = Double.parseDouble(numericPart.toString());
+            long roundedValue = Math.round(value);
+            return String.valueOf(roundedValue);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
+
 
     public LIMSResult getSampleResultBySampleId(String sampleId) {
         String manifestSampleId = null;
