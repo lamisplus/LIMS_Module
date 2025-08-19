@@ -347,14 +347,16 @@ public RestTemplate GetRestTemplate() {
                     String.class
             );
 
-            String body = Objects.requireNonNull(rawResponse.getBody());
+            String cleanedText = cleanJson(rawResponse.getBody());
+            LogInfo("CLEANED_TEXT", cleanedText);
+            String body = Objects.requireNonNull(cleanedText);
 
             if (body.trim().isEmpty()) {
                 throw new RuntimeException("Empty response from LIMS server");
             }
 
             String jsonPart = extractJsonFromText(body);
-            //LogInfo("JSONPATH_RESPONSE", jsonPart);
+            LogInfo("JSONPATH_RESPONSE", jsonPart);
             ObjectMapper mapper = new ObjectMapper();
             //LogInfo("RESULTS_RESPONSE", parsedResponse);
             return mapper.readValue(jsonPart, LIMSResultsResponseDTO.class);
@@ -369,6 +371,13 @@ public RestTemplate GetRestTemplate() {
         } catch (Exception ex) {
             throw new RuntimeException("Unexpected error while requesting LIMS results", ex);
         }
+    }
+
+    private String cleanJson(String rawJson) {
+        if (rawJson == null) {
+            return null;
+        }
+        return rawJson.replaceAll("[\\x00-\\x1F]", "");
     }
 
     /**
