@@ -242,7 +242,7 @@ const SampleSearch = ({ setSubmitted }) => {
               dob: row.dateOfBirth,
               age: calculateAge(row.dateOfBirth),
               testType: "VL",
-              sampleId: row.sampleID,
+              sampleId: row.sampleID.trim(),
               sampleType: row.sampleType,
               orderby: row.sampleOrderedBy,
               orderbydate: row.sampleOrderDate,

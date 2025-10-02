@@ -14,7 +14,8 @@ LimsManifestRepository extends JpaRepository<LIMSManifest, Integer> {
     Page<LIMSManifest> findLIMSManifestByManifestIDAndFacilityId(String manifestID, Long facilityId, Pageable pageable);
     Page<LIMSManifest> findAllByFacilityId(Long facilityId, Pageable pageable);
 
-    Optional<LIMSManifest> findLIMSManifestByManifestID (Integer integer);
+    @Query(value="SELECT * FROM lims_manifest WHERE id  = ?1", nativeQuery = true)
+    Optional<LIMSManifest> findLIMSManifestByManifestID (Integer id);
 
     @Query(value="SELECT id  FROM lims_manifest WHERE manifest_id  = ?1", nativeQuery = true)
     List<Integer> getManifestId(String manifiestId);

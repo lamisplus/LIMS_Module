@@ -140,7 +140,7 @@ const PrintManifest = (props) => {
   const componentRef = useRef();
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
-    pageStyle
+    pageStyle,
   });
 
   useEffect(() => {
@@ -191,7 +191,7 @@ const PrintManifest = (props) => {
                     disabled={!send ? false : true}
                     onClick={sendManifest}
                   >
-                    Send Manifest
+                    Resend Manifest
                   </MatButton>
                 ) : (
                   " "

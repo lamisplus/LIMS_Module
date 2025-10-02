@@ -18,6 +18,7 @@ import { makeStyles } from "@material-ui/core/styles";
 
 import ReplyIcon from "@mui/icons-material/Reply";
 import AddIcon from "@mui/icons-material/Add";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import PrintResults from "./PrintResults";
 
 const useStyles = makeStyles((theme) => ({
@@ -91,6 +92,7 @@ const Result = (props) => {
   const [open, setOpen] = useState(false);
   const [percentage, setPercentage] = useState(0);
   const handleOpen = () => setOpen(true);
+  const [download, setDownload] = useState(false);
 
   const toggleModal = () => setOpen(!open);
 
@@ -169,26 +171,8 @@ const Result = (props) => {
               };
 
               limsResult.push(result);
-
-              //SyncResults(d);
-              // axios
-              //   .post(`${url}lims/results`, [result], {
-              //     headers: { Authorization: `Bearer ${token}` },
-              //   })
-              //   .then((resp) => {
-              //     //console.log("results saved", resp)
-              //   });
             }
           });
-          //
-          // axios
-          //   .post(`${url}lims/results`, limsResult, {
-          //     headers: { Authorization: `Bearer ${token}` },
-          //   })
-          //   .then((resp) => {
-          //     console.log("results saved", resp);
-          //   })
-          //   .catch((err) => console.log(err));
         }
       } else {
         toast.success(
@@ -214,95 +198,60 @@ const Result = (props) => {
     getPCResults();
   };
 
-  // const SyncResults = async (result) => {
-  //   setPercentage(50);
-  //   let sampleID = result.sampleID;
+  const handleBulkDownload = async () => {
+    try {
+      setDownload(true);
+      if (manifestObj.id !== 0) {
+        console.log(manifestObj.id);
+        const manifestId = manifestObj?.id;
+        const configId = JSON.parse(localStorage.getItem("configId"));
 
-  //   if (sampleID.includes("/")) {
-  //     sampleID = result.sampleID?.replace("/", "_");
-  //   }
+        const response = await axios.get(
+          `${url}lims/bulk-download?manifestId=${manifestId}&configId=${configId}&page=0&size=100`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            responseType: "blob",
+          }
+        );
 
-  //   //get samples tied to a user
-  //   await axios
-  //     .get(`${url}lims/results/sample/${sampleID}`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     })
-  //     .then((res) => {
-  //       setPercentage(70);
-  //       axios
-  //         .get(`${url}laboratory/vl-results/patients/${res.data.patientId}`, {
-  //           headers: { Authorization: `Bearer ${token}` },
-  //         })
-  //         .then((res) => {
-  //           setPercentage(80);
-  //           let sampleData = res.data.filter(
-  //             (data) => data?.sampleNumber === sampleID?.replace("_", "/")
-  //           )[0];
+        if (response.status === 200) {
+          const contentDisposition = response.headers["content-disposition"];
+          let fileName = `Lims_results_${new Date()
+                    .toISOString()
+                    .slice(0, 10)}.zip`;
+          setDownload(false);
+          if (contentDisposition) {
+            const match = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (match?.[1]) {
+              fileName = match[1];
+            }
+          }
 
-  //           //console.log(sampleData);
+          if (!fileName.toLowerCase().endsWith(".zip")) {
+            fileName = fileName + ".zip"
+          }
 
-  //           updateResultsHIV(sampleData, result);
-  //         });
-  //     })
-  //     .catch((err) => console.error(err));
-  // };
+           // create download link
+          const blob = new Blob([response.data], { type: "application/zip" });
+          const webUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
 
-  // const updateResultsHIV = (sampleData, result) => {
-  //   setPercentage(90);
-  //   let sampleResult = {
-  //     id: sampleData.id,
-  //     orderId: sampleData.orderId,
-  //     visitId: result.visitId,
-  //     patientId: sampleData.patientId,
-  //     labNumber: sampleData.labNumber,
-  //     sampleNumber: sampleData.sampleNumber,
-  //     sampleCollectionDate: sampleData.sampleCollectionDate,
-  //     sampleCollectedBy: sampleData.sampleCollectedBy,
-  //     dateResultReceived: `${result.dateResultDispatched} 00:00:00`,
-  //     result: result.testResult,
-  //     resultReportedBy: sampleData.resultReportedBy,
-  //     dateResultReported: `${result.dateResultDispatched} 00:00:00`,
-  //     checkedBy: sampleData.checkedBy,
-  //     dateChecked: sampleData.dateChecked,
-  //     comments: sampleData.comments,
-  //     clinicianName: sampleData.clinicianName,
-  //     viralLoadIndication: sampleData.viralLoadIndication,
-  //     sampleTypeId: sampleData.sampleTypeId,
-  //     sampleTypeName: sampleData.sampleTypeName,
-  //     pcrLabName: sampleData.pcrLabName,
-  //     pcrLabSampleNumber: result.pcrLabSampleNumber,
-  //     sampleLoggedRemotely: sampleData.sampleLoggedRemotely,
-  //     dateSampleLoggedRemotely: sampleData.dateSampleLoggedRemotely,
-  //     dateReceivedAtPcrLab: `${result.dateSampleReceivedAtPCRLab} 00:00:00`,
-  //     orderBy: sampleData.orderBy,
-  //     dateOrderBy: sampleData.dateOrderBy,
-  //     assayedBy: sampleData.assayedBy,
-  //     dateAssayedBy: result.assayDate,
-  //     approvedBy: result.approvedBy,
-  //     dateApproved: result.approvalDate,
-  //     labTestGroupName: sampleData.labTestGroupName,
-  //     labTestName: sampleData.labTestName,
-  //     dateAssayed: result.assayDate,
-  //     viralLoadIndicationName: sampleData.viralLoadIndicationName,
-  //     collectedBy: sampleData.collectedBy,
-  //     dateCollectedBy: sampleData.dateCollectedBy,
-  //     labTestOrderStatus: sampleData.labTestOrderStatus,
-  //     labTestOrderStatusName: sampleData.labTestOrderStatusName,
-  //     labOrderIndication: sampleData.labOrderIndication,
-  //     orderedDate: sampleData.orderedDate,
-  //     testResult: result.testResult,
-  //     dateCheckedBy: sampleData.dateCheckedBy,
-  //   };
-  // axios
-  //     .put(`${url}laboratory/vl-results/${sampleData?.id}`, sampleResult, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     })
-  //     .then((res) => {
-  //       //console.log(res);
-  //       setPercentage(100);
-  //     })
-  //     .then((rep) => setPercentage(0));
-  // };
+          link.href = webUrl;
+          link.setAttribute("download", fileName);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+
+          // cleanup URL object
+          window.URL.revokeObjectURL(webUrl);
+        }
+
+
+      }
+    } catch (error) {
+      console.error("Error downloading results:", error);
+    }
+  };
 
   return (
     <div>
@@ -316,15 +265,20 @@ const Result = (props) => {
             " "
           )}
           <p style={{ textAlign: "right" }}>
-            {/* <MatButton
+            <MatButton
               variant="contained"
               color="dark"
               className={classes.button}
-              startIcon={<AddIcon />}
-              onClick={handleOpen}
+              startIcon={<ArrowDownwardIcon />}
+              onClick={handleBulkDownload}
             >
-              Add Result
-            </MatButton> */}
+              Download Bulk results{" "}
+              {download && (
+                <span>
+                  <CircularProgress color="secondary" />
+                </span>
+              )}
+            </MatButton>
             <MatButton
               variant="contained"
               color="success"
@@ -352,12 +306,6 @@ const Result = (props) => {
           <hr />
           {
             <>
-              {/* {percentage > 0 && (
-                <>
-                  <p>Syncing records to patient records</p>
-                  <ProgressBar now={percentage} active />
-                </>
-              )} */}
               <Alert
                 style={{
                   width: "100%",

@@ -245,7 +245,6 @@ public class LimsResultService {
         }
     }
 
-
     public LIMSResult getSampleResultBySampleId(String sampleId) {
         String manifestSampleId = null;
         if (sampleId.contains("_")) {
