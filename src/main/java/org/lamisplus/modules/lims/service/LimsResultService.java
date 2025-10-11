@@ -122,8 +122,23 @@ public class LimsResultService {
     }
 
     public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
-        LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
-        LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
+        String limsAssayDate = result.getAssayDate();
+        String limsResultDate = result.getResultDate();
+        LocalDateTime assayDate;
+        LocalDateTime reportedDate;
+
+        if (limsAssayDate == null || limsAssayDate.isEmpty()) {
+            assayDate = LocalDateTime.parse(result.getVisitDate() + " 00:00:00", formatter);
+        }else {
+            assayDate = LocalDateTime.parse(limsAssayDate + " 00:00:00", formatter);
+        }
+
+        if (limsResultDate == null || limsResultDate.isEmpty()) {
+            reportedDate = LocalDateTime.parse(result.getApprovalDate() + " 00:00:00", formatter);
+        }else {
+            reportedDate = LocalDateTime.parse(limsResultDate + " 00:00:00", formatter);
+        }
+
         LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
         String pcrLabSampleNumber = result.getPcrLabSampleNumber();
         String approvedBy = result.getApprovedBy();
@@ -139,8 +154,24 @@ public class LimsResultService {
     }
 
     public void insertLabResult(Integer patientId, String personUuid, LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
-        LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
-        LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
+//        LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
+//        LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
+        String limsAssayDate = result.getAssayDate();
+        String limsResultDate = result.getResultDate();
+        LocalDateTime assayDate;
+        LocalDateTime reportedDate;
+
+        if (limsAssayDate == null || limsAssayDate.isEmpty()) {
+            assayDate = LocalDateTime.parse(result.getVisitDate() + " 00:00:00", formatter);
+        }else {
+            assayDate = LocalDateTime.parse(limsAssayDate + " 00:00:00", formatter);
+        }
+
+        if (limsResultDate == null || limsResultDate.isEmpty()) {
+            reportedDate = LocalDateTime.parse(result.getApprovalDate() + " 00:00:00", formatter);
+        }else {
+            reportedDate = LocalDateTime.parse(limsResultDate + " 00:00:00", formatter);
+        }
         LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
         String pcrLabSampleNumber = result.getPcrLabSampleNumber();
         String approvedBy = result.getApprovedBy();
