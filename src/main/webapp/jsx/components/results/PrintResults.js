@@ -74,7 +74,7 @@ const print = {
 class PrintResults extends React.Component {
   render() {
     const { manifestObj, results } = this.props;
-//    console.log(results);
+    //    console.log(results);
 
     return (
       <Card>

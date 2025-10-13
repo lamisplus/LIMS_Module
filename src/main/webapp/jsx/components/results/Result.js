@@ -88,7 +88,7 @@ const Result = (props) => {
   const classes = useStyles();
   const [loading, setLoading] = useState(true);
   const [results, setResults] = useState([]);
-  const [getResult, setGetResult] = useState([]);
+  const [status, setStatus] = useState(false);
   const [open, setOpen] = useState(false);
   const [percentage, setPercentage] = useState(0);
   const handleOpen = () => setOpen(true);
@@ -114,21 +114,6 @@ const Result = (props) => {
 
   const componentRef = useRef();
 
-  // const loadResults = useCallback(async () => {
-  //   try {
-  //     setPercentage(10);
-  //     const response = await axios.get(
-  //       `${url}lims/results/manifests/${manifestObj.id}`,
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-  //     setResults(response.data.results);
-  //     console.log("gh", response.data.results);
-  //     setLoading(false);
-  //   } catch (e) {
-  //     setLoading(false);
-  //   }
-  // }, [manifestObj.id]);
-
   const getPCResults = useCallback(async () => {
     try {
       setPercentage(30);
@@ -140,39 +125,50 @@ const Result = (props) => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        if (response.data.viralLoadTestReport !== null) {
-          setPercentage(40);
-          setResults(response.data.viralLoadTestReport);
-          let limsResult = [];
-          response.data.viralLoadTestReport.forEach((d) => {
-            if (d.approvalDate !== "" && d.testResult !== "") {
-              let result = {
-                manifestRecordID: manifestObj.id,
-                dateResultDispatched: d.dateResultDispatched,
-                dateSampleReceivedAtPcrLab: d.dateSampleReceivedAtPcrLab,
-                testResult: d.testResult,
-                resultDate: d.resultDate,
-                pcrLabSampleNumber: d.pcrLabSampleNumber,
-                approvalDate: d.approvalDate,
-                assayDate: d.assayDate,
-                sampleTestable: d.sampleTestable,
-                sampleStatus: d.sampleStatus,
-                sampleID: d.sampleID,
-                uuid: "",
-                visitDate: d.visitDate,
-                transferStatus: d.transferStatus,
-                testedBy: d.transferStatus,
-                approvedBy: d.approvedBy,
-                dateTransferredOut: d.dateTransferredOut,
-                reasonNotTested: d.reasonNotTested,
-                otherRejectionReason: d.otherRejectionReason,
-                sendingPCRLabID: d.sendingPCRLabID,
-                sendingPCRLabName: d.sendingPCRLabName,
-              };
-
-              limsResult.push(result);
-            }
+        if (
+          response.data.manifestID === null &&
+          response.data.viralLoadTestReport === null
+        ) {
+          setStatus(true);
+          toast.info("No Viral Laod sample results found for this Manifest", {
+            position: toast.POSITION.TOP_RIGHT,
           });
+        } else {
+          setStatus(false);
+          if (response.data.viralLoadTestReport !== null) {
+            setPercentage(40);
+            setResults(response.data.viralLoadTestReport);
+            let limsResult = [];
+            response.data.viralLoadTestReport.forEach((d) => {
+              if (d.approvalDate !== "" && d.testResult !== "") {
+                let result = {
+                  manifestRecordID: manifestObj.id,
+                  dateResultDispatched: d.dateResultDispatched,
+                  dateSampleReceivedAtPcrLab: d.dateSampleReceivedAtPcrLab,
+                  testResult: d.testResult,
+                  resultDate: d.resultDate,
+                  pcrLabSampleNumber: d.pcrLabSampleNumber,
+                  approvalDate: d.approvalDate,
+                  assayDate: d.assayDate,
+                  sampleTestable: d.sampleTestable,
+                  sampleStatus: d.sampleStatus,
+                  sampleID: d.sampleID,
+                  uuid: "",
+                  visitDate: d.visitDate,
+                  transferStatus: d.transferStatus,
+                  testedBy: d.transferStatus,
+                  approvedBy: d.approvedBy,
+                  dateTransferredOut: d.dateTransferredOut,
+                  reasonNotTested: d.reasonNotTested,
+                  otherRejectionReason: d.otherRejectionReason,
+                  sendingPCRLabID: d.sendingPCRLabID,
+                  sendingPCRLabName: d.sendingPCRLabName,
+                };
+
+                limsResult.push(result);
+              }
+            });
+          }
         }
       } else {
         toast.success(
@@ -184,7 +180,10 @@ const Result = (props) => {
       }
       setLoading(false);
     } catch (e) {
-      console.log(e.message);
+      setStatus(true);
+      toast.info("No Viral Laod sample results found for this Manifest", {
+        position: toast.POSITION.TOP_RIGHT,
+      });
     }
   }, [manifestObj.id]);
 
@@ -217,8 +216,8 @@ const Result = (props) => {
         if (response.status === 200) {
           const contentDisposition = response.headers["content-disposition"];
           let fileName = `Lims_results_${new Date()
-                    .toISOString()
-                    .slice(0, 10)}.zip`;
+            .toISOString()
+            .slice(0, 10)}.zip`;
           setDownload(false);
           if (contentDisposition) {
             const match = contentDisposition.match(/filename="?([^"]+)"?/);
@@ -228,10 +227,10 @@ const Result = (props) => {
           }
 
           if (!fileName.toLowerCase().endsWith(".zip")) {
-            fileName = fileName + ".zip"
+            fileName = fileName + ".zip";
           }
 
-           // create download link
+          // create download link
           const blob = new Blob([response.data], { type: "application/zip" });
           const webUrl = window.URL.createObjectURL(blob);
           const link = document.createElement("a");
@@ -245,8 +244,6 @@ const Result = (props) => {
           // cleanup URL object
           window.URL.revokeObjectURL(webUrl);
         }
-
-
       }
     } catch (error) {
       console.error("Error downloading results:", error);
@@ -257,7 +254,7 @@ const Result = (props) => {
     <div>
       <Card>
         <Card.Body>
-          {results.length === 0 ? (
+          {results.length === 0 && status === false ? (
             <p>
               <CircularProgress color="primary" /> connecting to LIMS server...
             </p>

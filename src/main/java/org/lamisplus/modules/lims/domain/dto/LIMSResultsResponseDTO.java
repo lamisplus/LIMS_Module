@@ -1,5 +1,6 @@
 package org.lamisplus.modules.lims.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import java.util.List;
 

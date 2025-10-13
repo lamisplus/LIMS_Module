@@ -192,51 +192,6 @@ public class LimsResultService {
         );
     }
 
-
-    /**
-     * Extracts numeric parts from a test result string.
-     * 
-     * Side effects:
-     * 1. If input is "NotDetected" (case-insensitive), returns "0"
-     * 2. If input is null or empty, returns null
-     * 3. Extracts only digits and at most one decimal point from the input
-     * 4. If no numeric part is found or only a decimal point is found, returns null
-     * 5. Non-numeric characters (except one decimal point) are removed
-     * 6. If multiple decimal points exist, only the first one is kept
-     * 
-     * @param resultString The test result string to process
-     * @return The extracted numeric value as a string, or null if no valid numeric value found
-     */
-//    public static String extractNumericValue(String resultString) {
-//        if (resultString != null && resultString.equalsIgnoreCase("NotDetected")) {
-//            resultString = "0";
-//            return resultString;
-//        }
-//
-//        if (resultString == null || resultString.isEmpty()) {
-//            return null;
-//        }
-//
-//        StringBuilder numericPart = new StringBuilder();
-//        boolean decimalFound = false;
-//
-//        for (int i = 0; i < resultString.length(); i++) {
-//            char c = resultString.charAt(i);
-//            if (Character.isDigit(c)) {
-//                numericPart.append(c);
-//            } else if (c == '.' && !decimalFound) {
-//                numericPart.append(c);
-//                decimalFound = true;
-//            }
-//        }
-//
-//        if (numericPart.length() == 0 || numericPart.toString().equals(".")) {
-//            return null;
-//        }
-//
-//        return numericPart.toString();
-//    }
-
     public static String extractNumericValue(String resultString) {
         if (resultString == null || resultString.trim().isEmpty()) {
             return null;

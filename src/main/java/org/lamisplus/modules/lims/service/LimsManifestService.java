@@ -1,10 +1,12 @@
 package org.lamisplus.modules.lims.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.zookeeper.proto.ErrorResponse;
 import org.jetbrains.annotations.Nullable;
 import org.lamisplus.modules.base.domain.dto.PageDTO;
 import org.lamisplus.modules.base.domain.entities.OrganisationUnit;
@@ -315,34 +317,95 @@ public class LimsManifestService {
                     String.class
             );
 
-            if (Objects.requireNonNull(rawResponse.getBody()).contains("\"status\":\"error\"")) {
-                throw new RuntimeException("LIMS returned error: " + rawResponse.getBody());
+            String responseBody = rawResponse.getBody();
+
+            if (!rawResponse.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("LIMS server returned non-success HTTP status: " + rawResponse.getStatusCode());
             }
 
-            String cleanedText = cleanJson(rawResponse.getBody());
-//            LogInfo("CLEANED_TEXT", cleanedText);
-            String body = Objects.requireNonNull(cleanedText);
-
-            if (body.trim().isEmpty()) {
-                throw new RuntimeException("Empty response from LIMS server");
+            if (responseBody == null || responseBody.isEmpty()) {
+                throw new RuntimeException("Empty response received from LIMS server.");
             }
 
-            String jsonPart = extractJsonFromText(body);
-//            LogInfo("JSONPATH_RESPONSE", jsonPart);
+            if (responseBody.contains("\"status\":\"error\"") ||
+                    responseBody.contains("\"message\"")) {
+                throw new RuntimeException("LIMS returned an error response: " + responseBody);
+            }
+
+            String cleanedText = cleanJson(responseBody);
+            if (cleanedText.isEmpty()) {
+                throw new RuntimeException("Failed to clean LIMS response: response is empty after cleaning.");
+            }
+
+            String jsonPart = extractJsonFromText(cleanedText);
+            if (jsonPart.isEmpty()) {
+                throw new RuntimeException("Failed to extract JSON content from LIMS response.");
+            }
+
             ObjectMapper mapper = new ObjectMapper();
-            //LogInfo("RESULTS_RESPONSE", parsedResponse);
-            return mapper.readValue(jsonPart, LIMSResultsResponseDTO.class);
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            LIMSResultsResponseDTO result = mapper.readValue(jsonPart, LIMSResultsResponseDTO.class);
+            if (result == null) {
+                throw new RuntimeException("Parsed LIMS result is null after deserialization.");
+            }
+
+            return result;
 
         } catch (HttpStatusCodeException ex) {
             String errorBody = ex.getResponseBodyAsString();
-            throw new RuntimeException("HTTP Error from LIMS: " + ex.getStatusCode() + " Body: " + errorBody, ex);
+            throw new RuntimeException(String.format(
+                    "HTTP error from LIMS: Status %s, Body: %s",
+                    ex.getStatusCode(),
+                    errorBody
+            ), ex);
 
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed to parse LIMS JSON response", ex);
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException("Failed to parse LIMS JSON response: invalid JSON format", ex);
 
         } catch (Exception ex) {
-            throw new RuntimeException("Unexpected error while requesting LIMS results", ex);
+            throw new RuntimeException("Unexpected error while requesting LIMS results: " + ex.getMessage(), ex);
         }
+
+//        try {
+//            ResponseEntity<String> rawResponse = restTemplate.exchange(
+//                    config.getServerUrl() + resultsUrl,
+//                    HttpMethod.POST,
+//                    manifestEntity,
+//                    String.class
+//            );
+//
+//            String responseBody = rawResponse.getBody();
+//
+//            if (responseBody == null || responseBody.isEmpty()) {
+//                throw new RuntimeException("Empty response received from LIMS server.");
+//            }else {
+//                if (Objects.requireNonNull(responseBody).contains("\"status\":\"error\"") ||
+//                        Objects.requireNonNull(responseBody).contains("\"message\":\"No Viral Laod samples found.\"")) {
+//                    throw new RuntimeException("LIMS returned error: " + responseBody);
+//                }else {
+//                    String cleanedText = cleanJson(responseBody);
+//                    String body = Objects.requireNonNull(cleanedText);
+//
+//                    if (body.trim().isEmpty()) {
+//                        throw new RuntimeException("Empty response from LIMS server");
+//                    }
+//
+//                    String jsonPart = extractJsonFromText(body);
+//                    ObjectMapper mapper = new ObjectMapper();
+//                    return mapper.readValue(jsonPart, LIMSResultsResponseDTO.class);
+//                }
+//            }
+//        } catch (HttpStatusCodeException ex) {
+//            String errorBody = ex.getResponseBodyAsString();
+//            throw new RuntimeException("HTTP Error from LIMS: " + ex.getStatusCode() + " Body: " + errorBody, ex);
+//
+//        } catch (IOException ex) {
+//            throw new RuntimeException("Failed to parse LIMS JSON response", ex);
+//
+//        } catch (Exception ex) {
+//            throw new RuntimeException("Unexpected error while requesting LIMS results", ex);
+//        }
     }
 
     private String cleanJson(String rawJson) {
