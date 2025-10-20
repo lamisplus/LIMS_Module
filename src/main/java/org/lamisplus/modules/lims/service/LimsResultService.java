@@ -203,6 +203,10 @@ public class LimsResultService {
             return "0";
         }
 
+        if (resultString.equalsIgnoreCase("TargetNotDetected")) {
+            return "0";
+        }
+
         // Remove comparison symbols <, >, ≤, ≥ and extra spaces
         resultString = resultString.replaceAll("^[<>]=?|\\s+", "");
 

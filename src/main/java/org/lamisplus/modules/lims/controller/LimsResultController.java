@@ -135,7 +135,7 @@ public class LimsResultController {
             }
 
             String dateStamp = LocalDate.now().toString();
-            String zipFileName = "Lims_results_" + dateStamp + ".zip";
+            String zipFileName = "Lims_results_" + response.getManifestID() + "_" + dateStamp + ".zip";
             Path zipPath = basePath.resolve(zipFileName);
 
             try(ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))){
@@ -247,7 +247,8 @@ public class LimsResultController {
 
                     document.close();
 
-                    String filename = "LIMS_Result_" + result.getSampleID().replace("/", "_") + ".pdf";
+                    String filename = "LIMS_Result_" + result.getSampleID().replace("/", "_") + "_" +
+                            result.getTestID() + ".pdf";
                     zos.putNextEntry(new ZipEntry(filename));
                     zos.write(pdfBoas.toByteArray());
                     zos.closeEntry();
