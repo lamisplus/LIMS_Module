@@ -199,16 +199,21 @@ public class LimsResultService {
 
         resultString = resultString.trim();
 
+        // Remove comparison symbols <, >, ≤, ≥ and extra spaces
+        resultString = resultString.replaceAll("^[<>]=?|\\s+", "");
+
         if (resultString.equalsIgnoreCase("NotDetected")) {
             return "0";
         }
 
         if (resultString.equalsIgnoreCase("TargetNotDetected")) {
-            return "0";
+            return "9";
         }
 
-        // Remove comparison symbols <, >, ≤, ≥ and extra spaces
-        resultString = resultString.replaceAll("^[<>]=?|\\s+", "");
+        if (resultString.equalsIgnoreCase("Titermin")) {
+            return "10";
+        }
+
 
         StringBuilder numericPart = new StringBuilder();
         boolean decimalFound = false;
