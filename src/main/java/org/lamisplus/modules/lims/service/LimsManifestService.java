@@ -431,6 +431,10 @@ public class LimsManifestService {
         return limsManifestRepository.findLIMSManifestByManifestID(id);
     }
 
+    public Optional<LIMSSampleProjection> getSampleById(String id, int testId) {
+        return limsManifestRepository.findLIMSSampleBySampleID(id, testId);
+    }
+
     public LIMSResultsResponseDTO DownloadResultsFromLIMS(int id, int configId) {
         RestTemplate restTemplate = GetRestTemplate();
         HttpHeaders headers = GetHTTPHeaders();

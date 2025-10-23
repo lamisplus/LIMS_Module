@@ -4,15 +4,14 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
+import com.itextpdf.text.pdf.draw.LineSeparator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.audit4j.core.util.Log;
-import org.lamisplus.modules.lims.domain.dto.LIMSLoginResponseDTO;
-import org.lamisplus.modules.lims.domain.dto.LIMSResultDTO;
-import org.lamisplus.modules.lims.domain.dto.LIMSResultsResponseDTO;
-import org.lamisplus.modules.lims.domain.dto.ManifestDTO;
+import org.lamisplus.modules.lims.domain.dto.*;
 import org.lamisplus.modules.lims.domain.entity.LIMSManifest;
 import org.lamisplus.modules.lims.domain.entity.LIMSResult;
+import org.lamisplus.modules.lims.domain.entity.LIMSSample;
 import org.lamisplus.modules.lims.domain.entity.LIMSTest;
 import org.lamisplus.modules.lims.service.LimsManifestService;
 import org.lamisplus.modules.lims.service.LimsResultService;
@@ -32,6 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -86,21 +86,23 @@ public class LimsResultController {
         return limsResultService.getPatientIDBySampleID(sampleId);
     }
 
-    PdfPCell makeCell(String text, boolean isHeader) {
-        Font font = isHeader
-                ? new Font(
-                Font.FontFamily.HELVETICA, 12, Font.BOLD, BaseColor.WHITE
-        ) : new Font(
-                Font.FontFamily.HELVETICA, 12, Font.NORMAL
-        );
-
-        PdfPCell cell = new PdfPCell(new Phrase(text, font));
-
-        if (isHeader) {
-            cell.setBackgroundColor(new BaseColor(63, 81, 181));
-        }
-        cell.setPadding(8f);
+    PdfPCell makeSection(String titleText, Font sectionFont) {
+        PdfPCell cell = new PdfPCell(new Phrase( titleText, sectionFont));
+        cell.setBackgroundColor(new BaseColor(0, 102, 204));
+        cell.setColspan(4);
+        cell.setPadding(6f);
+        cell.setHorizontalAlignment(Element.ALIGN_LEFT);
         return cell;
+    }
+
+    PdfPCell makeCell(String text, Font font, boolean shaded) {
+       PdfPCell cell = new PdfPCell(new Phrase(text, font));
+       cell.setPadding(5f);
+       cell.setBorderColor(BaseColor.LIGHT_GRAY);
+       if(shaded){
+           cell.setBackgroundColor(new BaseColor(245, 245, 245));
+       }
+       return cell;
     }
 
     @GetMapping("/bulk-download")
@@ -140,118 +142,195 @@ public class LimsResultController {
 
             try(ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))){
                 for (LIMSResultDTO result : paginated) {
-                    ByteArrayOutputStream pdfBoas = new ByteArrayOutputStream();
-                    Document document = new Document();
-                    PdfWriter.getInstance(document, pdfBoas);
-                    document.open();
-                    Font titleFont = new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD);
-                    Font subTitleFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD);
-                    Paragraph title = new Paragraph("NISRN Viral Load Result", titleFont);
-                    Paragraph subTitle = new Paragraph(response.getReceivingFacilityName(), subTitleFont);
-                    title.setAlignment(Element.ALIGN_CENTER);
-                    title.setSpacingAfter(15f);
-                    document.add(title);
+                    Optional<LIMSSampleProjection> sample = limsManifestService.getSampleById(result.getSampleID(), result.getTestID());
 
-                    subTitle.setAlignment(Element.ALIGN_CENTER);
-                    subTitle.setSpacingAfter(5f);
-                    document.add(subTitle);
+                    if (sample.isPresent()) {
+                        ByteArrayOutputStream pdfBoas = new ByteArrayOutputStream();
+                        Document document = new Document(PageSize.A4, 36, 36, 60, 36);
+                        PdfWriter.getInstance(document, pdfBoas);
+                        document.open();
 
-                    PdfPTable table = new PdfPTable(2);
-                    table.setWidthPercentage(100);
-                    table.setSpacingBefore(10f);
-                    table.setSpacingAfter(10f);
-                    table.setWidths(new float[]{2f, 4f});
+                        Image logo = Image.getInstance(Objects.requireNonNull(getClass().getResource("/logo.png")));
+                        logo.scaleToFit(80, 80);
+                        logo.setAlignment(Element.ALIGN_LEFT);
 
-                    table.addCell(makeCell("Receiving PCR Lab: ", true));
-                    table.addCell(makeCell(String.valueOf(manifest.get().getReceivingLabName()), false));
+                        Font titleFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, BaseColor.BLACK);
+                        Font subTitleFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD, BaseColor.GRAY);
 
-                    table.addCell(makeCell("First Name: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getFirstName()), false));
+                        Paragraph title = new Paragraph("NISRN VIRAL LOAD LABORATORY REPORT", titleFont);
+                        title.setAlignment(Element.ALIGN_CENTER);
+//                        title.setSpacingAfter(5f);
+//                        document.add(title);
 
-                    table.addCell(makeCell("Surname: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getSurName()), false));
+                        Paragraph subTitle = new Paragraph(response.getReceivingFacilityName(), subTitleFont);
+                        subTitle.setAlignment(Element.ALIGN_CENTER);
+//                        subTitle.setSpacingAfter(5f);
+//                        document.add(subTitle);
 
-                    table.addCell(makeCell("Sex: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getSex()), false));
+                        PdfPTable header = new PdfPTable(2);
+                        header.setWidthPercentage(100);
+                        header.setWidths(new float[]{1.5f, 5f});
+                        header.getDefaultCell().setBorder(Rectangle.NO_BORDER);
 
-                    table.addCell(makeCell("Patient ID: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getPatientID().get(1).get("idNumber")), false));
+                        PdfPCell logoCell = new PdfPCell(logo);
+                        logoCell.setBorder(Rectangle.NO_BORDER);
+                        logoCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+                        header.addCell(logoCell);
 
-                    table.addCell(makeCell("Date Of Birth: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getDateOfBirth()), false));
+                        PdfPCell titleCell = new PdfPCell();
+                        titleCell.setBorder(Rectangle.NO_BORDER);
+                        titleCell.addElement(title);
+                        titleCell.addElement(subTitle);
+                        titleCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                        header.addCell(titleCell);
 
-                    table.addCell(makeCell("Sample Id: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getSampleID()), false));
+                        document.add(header);
 
-                    table.addCell(makeCell("Sample Package By: ", true));
-                    table.addCell(makeCell(String.valueOf(manifest.get().getSamplePackagedBy()), false));
+                        LineSeparator line = new LineSeparator();
+                        line.setOffset(-2);
+                        document.add(line);
+                        document.add(Chunk.NEWLINE);
 
-                    table.addCell(makeCell("Manifest Record ID: ", true));
-                    table.addCell(makeCell(String.valueOf(response.getManifestID()), false));
+                        PdfPTable table = new PdfPTable(4);
+                        table.setWidthPercentage(100);
+                        table.setSpacingBefore(5f);
+                        table.setSpacingAfter(5f);
+                        table.setWidths(new float[]{2f, 3f, 2f, 3f});
 
-                    table.addCell(makeCell("Pcr Lab Sample Number: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getPcrLabSampleNumber()), false));
+                        Font sectionFont = new Font(Font.FontFamily.HELVETICA, 11, Font.BOLD, BaseColor.WHITE);
+                        Font labelFont = new Font(Font.FontFamily.HELVETICA, 9, Font.BOLD, BaseColor.DARK_GRAY);
+                        Font valueFont = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL, BaseColor.BLACK);
 
-                    table.addCell(makeCell("Date Sample Received At PCR Lab: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getDateSampleReceivedAtPCRLab()), false));
+                        table.addCell(makeSection("PATIENT INFORMATION", sectionFont));
+                        table.addCell(makeCell("First Name:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getFirstName()), valueFont, true));
+                        table.addCell(makeCell("Surname:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getSurName()), valueFont,true));
 
-                    table.addCell(makeCell("Sample Status: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getSampleStatus()), false));
+                        table.addCell(makeCell("Sex:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getSex()), valueFont,false));
+                        table.addCell(makeCell("Age:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(sample.get().getAge()), valueFont,false));
 
-                    table.addCell(makeCell("Sample Testable: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getSampleTestable()), false));
+                        table.addCell(makeCell("Date Of Birth:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getDateOfBirth()), valueFont,true));
+                        table.addCell(makeCell("Unique client ID:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(sample.get().getUniqueId()), valueFont,true));
 
-                    table.addCell(makeCell("Assay By: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getTestedBy()), false));
+                        table.addCell(makeCell("Hospital number:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getPatientID().get(0).get("idNumber")), valueFont,false));
+                        table.addCell(makeCell("Patient ID:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getPatientID().get(1).get("idNumber")), valueFont,false));
 
-                    table.addCell(makeCell("Assay Date: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getAssayDate()), false));
+                        table.addCell(makeSection("PCR DETAILS", sectionFont));
+                        table.addCell(makeCell("Receiving PCR Lab:", labelFont, true));
+                        table.addCell(makeCell(String.valueOf(manifest.get().getReceivingLabName()), valueFont,true));
+                        table.addCell(makeCell("Receiving PCR Lab number:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(manifest.get().getReceivingLabID()), valueFont,true));
 
-                    table.addCell(makeCell("Result Date: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getResultDate()), false));
+                        table.addCell(makeCell("Manifest Record ID:", labelFont, false));
+                        table.addCell(makeCell(String.valueOf(response.getManifestID()), valueFont,false));
+                        table.addCell(makeCell("PCR Lab Sample Number:", labelFont, false));
+                        table.addCell(makeCell(String.valueOf(result.getPcrLabSampleNumber()), valueFont,false));
 
-                    table.addCell(makeCell("Test Result: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getTestResult()), false));
+                        table.addCell(makeSection("SAMPLE DETAILS", sectionFont));
+                        table.addCell(makeCell("Sample Id:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getSampleID()), valueFont,true));
+                        table.addCell(makeCell("Sample type:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(sample.get().getSampleType()), valueFont,true));
 
-                    table.addCell(makeCell("Approval By: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getApprovedBy()), false));
+                        table.addCell(makeCell("Sample collected by:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(sample.get().getSampleCollectedBy()), valueFont,false));
+                        table.addCell(makeCell("Sample Collection date/time:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(sample.get().getSampleCollectionDate()), valueFont,false));
 
-                    table.addCell(makeCell("Approval Date: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getApprovalDate()), false));
+                        table.addCell(makeCell("Sample Package By:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(manifest.get().getSamplePackagedBy()), valueFont,true));
+                        table.addCell(makeCell("Date Sample Received At PCR Lab:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getDateSampleReceivedAtPCRLab()), valueFont,true));
 
-                    table.addCell(makeCell("Date Result Dispatched: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getDateResultDispatched()), false));
+                        table.addCell(makeCell("Sample Status:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getSampleStatus()), valueFont,false));
+                        table.addCell(makeCell("Sample Testable:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getSampleTestable()), valueFont,false));
 
-                    table.addCell(makeCell("Date Transferred Out: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getDate_Transferred_Out()), false));
+                        table.addCell(makeCell("Ordered by:", labelFont, true));
+                        table.addCell(makeCell(String.valueOf(sample.get().getSampleOrderedBy()), valueFont,true));
+                        table.addCell(makeCell("Ordered date:", labelFont, true));
+                        table.addCell(makeCell(String.valueOf(sample.get().getSampleOrderDate()), valueFont,true));
 
-                    table.addCell(makeCell("Transfer Status: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getTransferStatus()), false));
+                        table.addCell(makeSection("TEST DETAILS", sectionFont));
+                        table.addCell(makeCell("Test type:", labelFont,true));
+                        table.addCell(makeCell("Viral Load", valueFont,true));
+                        table.addCell(makeCell("VL indication:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(sample.get().getIndicationVLTest()), valueFont,true));
 
-                    table.addCell(makeCell("Secondary PCR Lab ID: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getSecondary_PCR_Lab_ID()), false));
+                        table.addCell(makeCell("Tested by:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getTestedBy()), valueFont,false));
+                        table.addCell(makeCell("Tested date:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getAssayDate()), valueFont,false));
 
-                    table.addCell(makeCell("Secondary PCR Lab Name: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getSecondary_PCR_Lab_Name()), false));
+                        table.addCell(makeCell("Assay By:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getTestedBy()), valueFont,false));
+                        table.addCell(makeCell("Assay Date:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getAssayDate()), valueFont,false));
 
-                    table.addCell(makeCell("Other Rejection Reason: ", true));
-                    table.addCell(makeCell(String.valueOf(result.getOtherRejectionReason()), false));
+                        table.addCell(makeCell("Result Date:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getResultDate()), valueFont,true));
+                        table.addCell(makeCell("Test Result:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getTestResult()), valueFont,true));
 
-                    document.add(table);
+                        table.addCell(makeCell("Date Transferred Out:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getDate_Transferred_Out()), valueFont,false));
+                        table.addCell(makeCell("Transfer Status:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getTransferStatus()), valueFont,false));
 
-                    Font footerFont = new Font(Font.FontFamily.HELVETICA, 8, Font.ITALIC, BaseColor.DARK_GRAY);
-                    Paragraph footer = new Paragraph("Generated by LAMISPlus EMR - Confidential " + dateStamp, footerFont);
-                    footer.setAlignment(Element.ALIGN_CENTER);
-                    footer.setSpacingBefore(20f);
-                    document.add(footer);
+                        table.addCell(makeCell("Secondary PCR Lab ID:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getSecondary_PCR_Lab_ID()), valueFont,true));
+                        table.addCell(makeCell("Secondary PCR Lab Name:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getSecondary_PCR_Lab_Name()), valueFont,true));
 
-                    document.close();
+                        table.addCell(makeCell("Test number:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(sample.get().getTestID()), valueFont,false));
+                        table.addCell(makeCell("", labelFont,false));
+                        table.addCell(makeCell("", valueFont,false));
 
-                    String filename = "LIMS_Result_" + result.getSampleID().replace("/", "_") + "_" +
-                            result.getTestID() + ".pdf";
-                    zos.putNextEntry(new ZipEntry(filename));
-                    zos.write(pdfBoas.toByteArray());
-                    zos.closeEntry();
+
+                        table.addCell(makeSection("APPROVAL & DISPATCH DETAILS", sectionFont));
+                        table.addCell(makeCell("Date Result Dispatched:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getDateResultDispatched()), valueFont,true));
+                        table.addCell(makeCell("Other Rejection Reason:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getOtherRejectionReason()), valueFont,true));
+
+                        table.addCell(makeCell("Approval By:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getApprovedBy()), valueFont,false));
+                        table.addCell(makeCell("Approval Date:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getApprovalDate()), valueFont,false));
+
+                        table.addCell(makeCell("Reviewed by:", labelFont,true));
+                        table.addCell(makeCell("----------------------------", valueFont,true));
+                        table.addCell(makeCell("Signature:", labelFont,true));
+                        table.addCell(makeCell("----------------------------", valueFont,true));
+
+                        document.add(table);
+
+                        document.add(Chunk.NEWLINE);
+
+
+                        Font footerFont = new Font(Font.FontFamily.HELVETICA, 8, Font.ITALIC, BaseColor.DARK_GRAY);
+                        Paragraph footer = new Paragraph("Generated by LAMISPlus EMR - Confidential " + dateStamp, footerFont);
+                        footer.setAlignment(Element.ALIGN_CENTER);
+//                        footer.setSpacingBefore(20f);
+                        document.add(footer);
+
+                        document.close();
+
+                        String filename = "LIMS_Result_" + result.getSampleID().replace("/", "_") + "_" +
+                                result.getTestID() + ".pdf";
+                        zos.putNextEntry(new ZipEntry(filename));
+                        zos.write(pdfBoas.toByteArray());
+                        zos.closeEntry();
+                    }
                 }
             } catch (DocumentException e) {
                 throw new RuntimeException(e);
