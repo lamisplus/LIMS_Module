@@ -152,20 +152,16 @@ public class LimsResultController {
 
                         Image logo = Image.getInstance(Objects.requireNonNull(getClass().getResource("/logo.png")));
                         logo.scaleToFit(80, 80);
-                        logo.setAlignment(Element.ALIGN_LEFT);
+                        logo.setAlignment(Element.ALIGN_RIGHT);
 
                         Font titleFont = new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD, BaseColor.BLACK);
                         Font subTitleFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD, BaseColor.GRAY);
 
                         Paragraph title = new Paragraph("NISRN VIRAL LOAD LABORATORY REPORT", titleFont);
                         title.setAlignment(Element.ALIGN_CENTER);
-//                        title.setSpacingAfter(5f);
-//                        document.add(title);
 
                         Paragraph subTitle = new Paragraph(response.getReceivingFacilityName(), subTitleFont);
                         subTitle.setAlignment(Element.ALIGN_CENTER);
-//                        subTitle.setSpacingAfter(5f);
-//                        document.add(subTitle);
 
                         PdfPTable header = new PdfPTable(2);
                         header.setWidthPercentage(100);
@@ -215,12 +211,12 @@ public class LimsResultController {
                         table.addCell(makeCell("Date Of Birth:", labelFont,true));
                         table.addCell(makeCell(String.valueOf(result.getDateOfBirth()), valueFont,true));
                         table.addCell(makeCell("Unique client ID:", labelFont,true));
-                        table.addCell(makeCell(String.valueOf(sample.get().getUniqueId()), valueFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getPatientID().get(0).get("idNumber")), valueFont,true));
 
                         table.addCell(makeCell("Hospital number:", labelFont,false));
-                        table.addCell(makeCell(String.valueOf(result.getPatientID().get(0).get("idNumber")), valueFont,false));
-                        table.addCell(makeCell("Patient ID:", labelFont,false));
                         table.addCell(makeCell(String.valueOf(result.getPatientID().get(1).get("idNumber")), valueFont,false));
+                        table.addCell(makeCell("Test Number:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(sample.get().getTestID()), valueFont,false));
 
                         table.addCell(makeSection("PCR DETAILS", sectionFont));
                         table.addCell(makeCell("Receiving PCR Lab:", labelFont, true));
@@ -270,30 +266,25 @@ public class LimsResultController {
                         table.addCell(makeCell("Tested date:", labelFont,false));
                         table.addCell(makeCell(String.valueOf(result.getAssayDate()), valueFont,false));
 
-                        table.addCell(makeCell("Assay By:", labelFont,false));
-                        table.addCell(makeCell(String.valueOf(result.getTestedBy()), valueFont,false));
-                        table.addCell(makeCell("Assay Date:", labelFont,false));
-                        table.addCell(makeCell(String.valueOf(result.getAssayDate()), valueFont,false));
+                        table.addCell(makeCell("Assay By:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getTestedBy()), valueFont,true));
+                        table.addCell(makeCell("Assay Date:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getAssayDate()), valueFont,true));
 
-                        table.addCell(makeCell("Result Date:", labelFont,true));
-                        table.addCell(makeCell(String.valueOf(result.getResultDate()), valueFont,true));
-                        table.addCell(makeCell("Test Result:", labelFont,true));
-                        table.addCell(makeCell(String.valueOf(result.getTestResult()), valueFont,true));
+                        table.addCell(makeCell("Result Date:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getResultDate()), valueFont,false));
+                        table.addCell(makeCell("Test Result:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getTestResult()), valueFont,false));
 
-                        table.addCell(makeCell("Date Transferred Out:", labelFont,false));
-                        table.addCell(makeCell(String.valueOf(result.getDate_Transferred_Out()), valueFont,false));
-                        table.addCell(makeCell("Transfer Status:", labelFont,false));
-                        table.addCell(makeCell(String.valueOf(result.getTransferStatus()), valueFont,false));
+                        table.addCell(makeCell("Date Transferred Out:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getDate_Transferred_Out()), valueFont,true));
+                        table.addCell(makeCell("Transfer Status:", labelFont,true));
+                        table.addCell(makeCell(String.valueOf(result.getTransferStatus()), valueFont,true));
 
-                        table.addCell(makeCell("Secondary PCR Lab ID:", labelFont,true));
-                        table.addCell(makeCell(String.valueOf(result.getSecondary_PCR_Lab_ID()), valueFont,true));
-                        table.addCell(makeCell("Secondary PCR Lab Name:", labelFont,true));
-                        table.addCell(makeCell(String.valueOf(result.getSecondary_PCR_Lab_Name()), valueFont,true));
-
-                        table.addCell(makeCell("Test number:", labelFont,false));
-                        table.addCell(makeCell(String.valueOf(sample.get().getTestID()), valueFont,false));
-                        table.addCell(makeCell("", labelFont,false));
-                        table.addCell(makeCell("", valueFont,false));
+                        table.addCell(makeCell("Secondary PCR Lab ID:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getSecondary_PCR_Lab_ID()), valueFont,false));
+                        table.addCell(makeCell("Secondary PCR Lab Name:", labelFont,false));
+                        table.addCell(makeCell(String.valueOf(result.getSecondary_PCR_Lab_Name()), valueFont,false));
 
 
                         table.addCell(makeSection("APPROVAL & DISPATCH DETAILS", sectionFont));
