@@ -366,46 +366,6 @@ public class LimsManifestService {
         } catch (Exception ex) {
             throw new RuntimeException("Unexpected error while requesting LIMS results: " + ex.getMessage(), ex);
         }
-
-//        try {
-//            ResponseEntity<String> rawResponse = restTemplate.exchange(
-//                    config.getServerUrl() + resultsUrl,
-//                    HttpMethod.POST,
-//                    manifestEntity,
-//                    String.class
-//            );
-//
-//            String responseBody = rawResponse.getBody();
-//
-//            if (responseBody == null || responseBody.isEmpty()) {
-//                throw new RuntimeException("Empty response received from LIMS server.");
-//            }else {
-//                if (Objects.requireNonNull(responseBody).contains("\"status\":\"error\"") ||
-//                        Objects.requireNonNull(responseBody).contains("\"message\":\"No Viral Laod samples found.\"")) {
-//                    throw new RuntimeException("LIMS returned error: " + responseBody);
-//                }else {
-//                    String cleanedText = cleanJson(responseBody);
-//                    String body = Objects.requireNonNull(cleanedText);
-//
-//                    if (body.trim().isEmpty()) {
-//                        throw new RuntimeException("Empty response from LIMS server");
-//                    }
-//
-//                    String jsonPart = extractJsonFromText(body);
-//                    ObjectMapper mapper = new ObjectMapper();
-//                    return mapper.readValue(jsonPart, LIMSResultsResponseDTO.class);
-//                }
-//            }
-//        } catch (HttpStatusCodeException ex) {
-//            String errorBody = ex.getResponseBodyAsString();
-//            throw new RuntimeException("HTTP Error from LIMS: " + ex.getStatusCode() + " Body: " + errorBody, ex);
-//
-//        } catch (IOException ex) {
-//            throw new RuntimeException("Failed to parse LIMS JSON response", ex);
-//
-//        } catch (Exception ex) {
-//            throw new RuntimeException("Unexpected error while requesting LIMS results", ex);
-//        }
     }
 
     private String cleanJson(String rawJson) {

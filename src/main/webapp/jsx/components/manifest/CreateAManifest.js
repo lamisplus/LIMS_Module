@@ -27,7 +27,6 @@ import Button from "@mui/material/Button";
 import { makeStyles } from "@material-ui/core/styles";
 //import { pcr_lab } from "../SampleCollection/pcr";
 import DoneIcon from "@mui/icons-material/Done";
-import QrCode2Icon from "@mui/icons-material/QrCode2";
 
 const useStyles = makeStyles((theme) => ({
   card: {
@@ -378,29 +377,6 @@ const CreateAManifest = (props) => {
       });
   };
 
-  const handleBarcodeGeneration = (e) => {
-    e.preventDefault();
-
-    const payload = {
-      token: "",
-      manifestID: manifestData.manifestID,
-      sendingFacilityID: manifestData.sendingFacilityID,
-      sendingFacilityName: manifestData.sendingFacilityName,
-      testType: "VL",
-      receivingPCRLabID: manifestData.receivingLabID,
-      receivingPCRLabName: manifestData.receivingLabName,
-    };
-
-    const samples = localStore.map((item) => ({
-      sampleId: item.sampleID.trim(),
-      testId: item.patientID.find((pid) => pid.idTypeCode === "CLIENTID")
-        ?.idNumber,
-      manifestId: manifestData.manifestID,
-    }));
-
-    console.log(samples, payload);
-  };
-
   return (
     <>
       <Card>
@@ -655,15 +631,7 @@ const CreateAManifest = (props) => {
                   </FormGroup>
                 </Col>
               </Row>
-              <Button
-                variant="contained"
-                color="secondary"
-                type="submit"
-                startIcon={<QrCode2Icon />}
-                onClick={handleBarcodeGeneration}
-              >
-                Generate Sample Barcodes
-              </Button>{" "}
+
               {saved === false ? (
                 <>
                   <Button

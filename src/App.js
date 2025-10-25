@@ -23,7 +23,7 @@ export default function App() {
       <ToastContainer />
       <Switch>
         <Route path="/Patient-result">
-            <PatientResultPrint />
+          <PatientResultPrint />
         </Route>
         <Route path="/result">
           <Result />

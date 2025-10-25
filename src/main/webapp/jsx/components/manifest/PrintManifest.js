@@ -5,6 +5,9 @@ import { Card } from "react-bootstrap";
 import Alert from "react-bootstrap/Alert";
 
 import "../SampleCollection/sample.css";
+import axios from "axios";
+import { token, url } from "../../../api";
+import CircularProgress from "@mui/material/CircularProgress";
 
 import { makeStyles } from "@material-ui/core/styles";
 import ManifestPrint from "./ManifestPrint";
@@ -15,6 +18,8 @@ import ReplyIcon from "@mui/icons-material/Reply";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import SendIcon from "@mui/icons-material/Send";
 import ConfigModal from "../SampleCollection/ConfigModal";
+import QrCode2Icon from "@mui/icons-material/QrCode2";
+import jsPDF from "jspdf";
 
 const useStyles = makeStyles((theme) => ({
   card: {
@@ -79,15 +84,15 @@ const PrintManifest = (props) => {
     history.location && history.location.state
       ? history.location.state.sampleObj
       : {};
-  //console.log("props",sampleObj)
+  //console.log("props", sampleObj);
+
   const classes = useStyles();
 
   const [saved, setSaved] = useState(false);
   const [localStore, SetLocalStore] = useState([]);
   const [send, setSend] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [failed, setFailed] = useState(false);
-
+  const [download, setDownload] = useState(false);
   const [open, setOpen] = useState(false);
 
   const handleOpen = () => setOpen(true);
@@ -153,6 +158,10 @@ const PrintManifest = (props) => {
     }
   }, []);
 
+  const handleFailure = (status) => {
+    //setFailed(!failed);
+  };
+
   const sendManifest = async (e) => {
     e.preventDefault();
     handleOpen();
@@ -163,8 +172,79 @@ const PrintManifest = (props) => {
     setProgress(progessCount);
   };
 
-  const handleFailure = (status) => {
-    //setFailed(!failed);
+  const getBarcode = async () => {
+    const serverId = JSON.parse(localStorage.getItem("configId"));
+    const manifestId = sampleObj.id;
+    const count = sampleObj.sampleInformation.length;
+    setDownload(true);
+    await axios
+      .post(
+        `${url}barcodes/generate?configId=${serverId}&manifestId=${manifestId}&count=${count}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      .then((resp) => {
+        let barcodes = resp.data.data;
+
+        if (barcodes.length > 0) {
+          handleDownloadPDF(barcodes);
+        }
+        setDownload(false);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const handleDownloadPDF = async (barcodes) => {
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const colWidth = (pageWidth - margin * 2) / 3; // 3 columns per row
+    const rowHeight = 40; // height per label row
+    let x = margin;
+    let y = margin;
+
+    for (let i = 0; i < barcodes.length; i++) {
+      const barcode = barcodes[i];
+      const img = new Image();
+      img.src = barcode.barcodeImage;
+
+      await new Promise((resolve) => (img.onload = resolve));
+
+      // Draw barcode label box (optional dashed border for cut line)
+      pdf.setLineWidth(0.1);
+      pdf.setDrawColor(180, 180, 180);
+      pdf.setLineDash([1, 1]); // dashed border
+      pdf.rect(x, y, colWidth - 2, rowHeight, "S");
+
+      // Add text and image
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Serial: ${barcode.serialNumber}`, x + 4, y + 8);
+      pdf.addImage(img, "PNG", x + 4, y + 10, colWidth - 10, 20);
+
+      // Move to next column
+      x += colWidth;
+
+      // Move to next row if end of line
+      if ((i + 1) % 3 === 0) {
+        x = margin;
+        y += rowHeight + 5; // add spacing between rows
+      }
+
+      // Add new page if overflow
+      if (y + rowHeight > pageHeight - margin) {
+        pdf.addPage();
+        x = margin;
+        y = margin;
+      }
+    }
+
+    pdf.save("barcodes.pdf");
   };
 
   return (
@@ -194,7 +274,23 @@ const PrintManifest = (props) => {
                     Resend Manifest
                   </MatButton>
                 ) : (
-                  " "
+                  <MatButton
+                    variant="contained"
+                    color="primary"
+                    style={{
+                      backgroundColor: "#014d88",
+                      color: "#fff",
+                    }}
+                    startIcon={<QrCode2Icon />}
+                    onClick={getBarcode}
+                  >
+                    Generate Barcode{" "}
+                    {download && (
+                      <span>
+                        <CircularProgress color="secondary" />
+                      </span>
+                    )}
+                  </MatButton>
                 )}
 
                 <MatButton
