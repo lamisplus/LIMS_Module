@@ -141,8 +141,8 @@ public class LIMSBarcodeService {
 //
 //        assert config != null;
         LIMSConfig CONFIG = new LIMSConfig();
-        CONFIG.setConfigEmail("demo@lims.ng");
-        CONFIG.setConfigPassword("demo@2k1");
+        CONFIG.setConfigEmail("");
+        CONFIG.setConfigPassword("");
 
         LIMSLoginResponseDTO loginResponseDTO = LoginToLIMS(restTemplate, headers, CONFIG);
         LOG.info("loginResponse response " + loginResponseDTO.toString());
