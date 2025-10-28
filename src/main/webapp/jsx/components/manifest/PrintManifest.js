@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useHistory } from "react-router-dom";
 import ProgressBar from "../SampleCollection/Progressbar";
 import { Card } from "react-bootstrap";
@@ -95,6 +95,17 @@ const PrintManifest = (props) => {
   const [download, setDownload] = useState(false);
   const [open, setOpen] = useState(false);
 
+  const loadConfig = useCallback(async () => {
+    try {
+      const response = await axios.get(`${url}lims/config`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      localStorage.setItem("configId", JSON.stringify(response.data.id));
+    } catch (e) {
+      console.log(e);
+    }
+  }, []);
+
   const handleOpen = () => setOpen(true);
 
   const toggleModal = () => setOpen(!open);
@@ -149,6 +160,7 @@ const PrintManifest = (props) => {
   });
 
   useEffect(() => {
+    loadConfig();
     const manifests = JSON.parse(localStorage.getItem("manifest"));
     if (manifests) {
       SetLocalStore(manifests);
@@ -156,7 +168,7 @@ const PrintManifest = (props) => {
     } else {
       SetLocalStore(sampleObj);
     }
-  }, []);
+  }, [loadConfig]);
 
   const handleFailure = (status) => {
     //setFailed(!failed);
@@ -203,8 +215,8 @@ const PrintManifest = (props) => {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 10;
-    const colWidth = (pageWidth - margin * 2) / 3; // 3 columns per row
-    const rowHeight = 40; // height per label row
+    const colWidth = (pageWidth - margin * 2) / 3;
+    const rowHeight = 40;
     let x = margin;
     let y = margin;
 
@@ -215,28 +227,23 @@ const PrintManifest = (props) => {
 
       await new Promise((resolve) => (img.onload = resolve));
 
-      // Draw barcode label box (optional dashed border for cut line)
       pdf.setLineWidth(0.1);
       pdf.setDrawColor(180, 180, 180);
-      pdf.setLineDash([1, 1]); // dashed border
+      pdf.setLineDash([1, 1]);
       pdf.rect(x, y, colWidth - 2, rowHeight, "S");
 
-      // Add text and image
       pdf.setFontSize(10);
       pdf.setTextColor(0, 0, 0);
       pdf.text(`Serial: ${barcode.serialNumber}`, x + 4, y + 8);
       pdf.addImage(img, "PNG", x + 4, y + 10, colWidth - 10, 20);
 
-      // Move to next column
       x += colWidth;
 
-      // Move to next row if end of line
       if ((i + 1) % 3 === 0) {
         x = margin;
-        y += rowHeight + 5; // add spacing between rows
+        y += rowHeight + 5;
       }
 
-      // Add new page if overflow
       if (y + rowHeight > pageHeight - margin) {
         pdf.addPage();
         x = margin;

@@ -391,8 +391,12 @@ public class LimsManifestService {
         return limsManifestRepository.findLIMSManifestByManifestID(id);
     }
 
-    public Optional<LIMSSampleProjection> getSampleById(String id, int testId) {
-        return limsManifestRepository.findLIMSSampleBySampleID(id, testId);
+    public Optional<LIMSSampleProjection> getSampleByTestId(int testId, String id) {
+            return limsManifestRepository.findLIMSSampleBySampleIDAndTestID(testId, id);
+    }
+
+    public Optional<LIMSSampleProjection> getSampleById(String id) {
+        return limsManifestRepository.findLIMSSampleBySampleID(id);
     }
 
     public LIMSResultsResponseDTO DownloadResultsFromLIMS(int id, int configId) {

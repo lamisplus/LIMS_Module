@@ -10,7 +10,7 @@ import org.lamisplus.modules.lims.domain.mapper.LimsMapper;
 import org.lamisplus.modules.lims.repository.LimsConfigRepository;
 import org.lamisplus.modules.lims.repository.LimsManifestRepository;
 import org.lamisplus.modules.lims.util.BarcodeGenerator;
-import org.lamisplus.modules.lims.util.BarcodeQRUtil;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Primary
 @Slf4j
 @RequiredArgsConstructor
 public class LIMSBarcodeService {

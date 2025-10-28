@@ -1,10 +1,14 @@
 package org.lamisplus.modules.lims.util;
 
+import org.springframework.stereotype.Component;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
+
+@Component
 public class BarcodeQRUtil {
     public static String generateBarcode(String data, int width, int height) throws Exception {
         return generateTextBarcode(data, width, height);

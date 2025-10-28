@@ -141,8 +141,14 @@ public class LimsResultController {
             Path zipPath = basePath.resolve(zipFileName);
 
             try(ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))){
+                Optional<LIMSSampleProjection> sample;
+
                 for (LIMSResultDTO result : paginated) {
-                    Optional<LIMSSampleProjection> sample = limsManifestService.getSampleById(result.getSampleID(), result.getTestID());
+                    if (result.getTestID() != null) {
+                        sample = limsManifestService.getSampleByTestId(result.getTestID(), result.getSampleID());
+                    }else{
+                        sample = limsManifestService.getSampleById(result.getSampleID());
+                    }
 
                     if (sample.isPresent()) {
                         ByteArrayOutputStream pdfBoas = new ByteArrayOutputStream();

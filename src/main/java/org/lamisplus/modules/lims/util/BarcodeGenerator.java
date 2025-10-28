@@ -1,5 +1,7 @@
 package org.lamisplus.modules.lims.util;
 
+import org.springframework.stereotype.Component;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -8,7 +10,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
-
+@Component
 public class BarcodeGenerator {
     private static final Map<Character, String> CODE128_CHARSET = new HashMap<>();
     private static final String[] CODE128_PATTERNS = {
