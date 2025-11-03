@@ -20,6 +20,7 @@ import SendIcon from "@mui/icons-material/Send";
 import ConfigModal from "../SampleCollection/ConfigModal";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import jsPDF from "jspdf";
+import { toast } from "react-toastify";
 
 const useStyles = makeStyles((theme) => ({
   card: {
@@ -200,8 +201,12 @@ const PrintManifest = (props) => {
       .then((resp) => {
         let barcodes = resp.data.data;
 
-        if (barcodes.length > 0) {
+        if (resp.status === 200) {
           handleDownloadPDF(barcodes);
+        } else {
+          toast.info(resp.data.message, {
+            position: toast.POSITION.TOP_RIGHT,
+          });
         }
         setDownload(false);
       })
@@ -311,19 +316,6 @@ const PrintManifest = (props) => {
                   Print
                 </MatButton>
 
-                <Link color="inherit" to={{ pathname: "/" }}>
-                  <MatButton
-                    variant="contained"
-                    color="primary"
-                    style={{
-                      backgroundColor: "rgb(153, 46, 98)",
-                      color: "#fff",
-                    }}
-                    startIcon={<ReplyIcon />}
-                  >
-                    back
-                  </MatButton>
-                </Link>
                 <Link
                   color="inherit"
                   to={{
@@ -339,6 +331,20 @@ const PrintManifest = (props) => {
                     startIcon={<ListAltIcon />}
                   >
                     Results
+                  </MatButton>
+                </Link>
+
+                <Link color="inherit" to={{ pathname: "/" }}>
+                  <MatButton
+                    variant="contained"
+                    color="primary"
+                    style={{
+                      backgroundColor: "rgb(153, 46, 98)",
+                      color: "#fff",
+                    }}
+                    startIcon={<ReplyIcon />}
+                  >
+                    back
                   </MatButton>
                 </Link>
               </p>

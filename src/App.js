@@ -16,6 +16,7 @@ import PrintManifest from "./main/webapp/jsx/components/manifest/PrintManifest";
 import Result from "./main/webapp/jsx/components/results/Result";
 import PatientResultPrint from "./main/webapp/jsx/components/results/PatientResultPrint";
 import AddResult from "./main/webapp/jsx/components/results/AddResults";
+import Barcodes from "./main/webapp/jsx/components/manifest/Barcodes";
 
 export default function App() {
   return (
@@ -27,6 +28,9 @@ export default function App() {
         </Route>
         <Route path="/result">
           <Result />
+        </Route>
+        <Route path="/barcodes">
+          <Barcodes />
         </Route>
         <Route path="/add-result">
           <AddResult />

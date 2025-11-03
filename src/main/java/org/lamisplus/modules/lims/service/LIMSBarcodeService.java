@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lamisplus.modules.lims.domain.dto.*;
+import org.lamisplus.modules.lims.domain.entity.LIMSBarcode;
 import org.lamisplus.modules.lims.domain.entity.LIMSConfig;
 import org.lamisplus.modules.lims.domain.mapper.LimsMapper;
+import org.lamisplus.modules.lims.repository.LimsBarcodeRepository;
 import org.lamisplus.modules.lims.repository.LimsConfigRepository;
 import org.lamisplus.modules.lims.repository.LimsManifestRepository;
 import org.lamisplus.modules.lims.util.BarcodeGenerator;
@@ -37,6 +39,7 @@ public class LIMSBarcodeService {
 
     private final LimsManifestRepository limsManifestRepository;
     private final LimsConfigRepository limsConfigRepository;
+    private final LimsBarcodeRepository limsBarcodeRepository;
     private final LimsMapper limsMapper;
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -86,11 +89,9 @@ public class LIMSBarcodeService {
         return limsMapper.toManifestDto(limsManifestRepository.findById(id).orElse(null));
     }
 
-    private JsonNode postBarcode(RestTemplate restTemplate, HttpHeaders headers, int ManifestId,
+    private JsonNode postBarcode(RestTemplate restTemplate, HttpHeaders headers, LIMSManifestDTO manifest,
                                  LIMSLoginResponseDTO loginResponseDTO, LIMSConfig config, int count){
         try{
-            LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(ManifestId));
-
             LIMSSsampleBarcodeRequestDTO barcodeRequest = new LIMSSsampleBarcodeRequestDTO();
             barcodeRequest.setToken(loginResponseDTO.getJwt());
             barcodeRequest.setReceivingLabID(manifest.getReceivingLabID());
@@ -119,7 +120,6 @@ public class LIMSBarcodeService {
             if (!"success".equalsIgnoreCase(root.path("status").asText())) {
                 throw new RuntimeException(root.path("message").asText("Unknown LIMS API error"));
             }
-            //TODO: save in the db. manifest Id, sessionId, serial numbers, sample id
 
             return root.path("serial_numbers");
         }catch (HttpStatusCodeException ex) {
@@ -145,20 +145,45 @@ public class LIMSBarcodeService {
         CONFIG.setConfigEmail("");
         CONFIG.setConfigPassword("");
 
+        LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(manifestId));
+
         LIMSLoginResponseDTO loginResponseDTO = LoginToLIMS(restTemplate, headers, CONFIG);
-        LOG.info("loginResponse response " + loginResponseDTO.toString());
-        JsonNode serialResponseDTO = postBarcode(restTemplate, headers, manifestId, loginResponseDTO,CONFIG,count);
-        LOG.info("serialResponse response " + serialResponseDTO.toString());
+
+        JsonNode serialResponseDTO = postBarcode(restTemplate, headers, manifest, loginResponseDTO,CONFIG,count);
 
         List<String> serialNumbers = new ArrayList<>();
 
-        for (JsonNode sn : serialResponseDTO) {
-            serialNumbers.add(sn.asText());
+        LIMSBarcode existingBarcodes = limsBarcodeRepository.checkBarcodesByManifestID(manifest.getManifestID());
+
+        if (existingBarcodes == null) {
+
+            for (JsonNode sn : serialResponseDTO) {
+                serialNumbers.add(sn.asText());
+            }
+
+            if (!serialNumbers.isEmpty() && serialNumbers.size() == manifest.getSampleInformation().size()) {
+                for (int i = 0; i < manifest.getSampleInformation().size(); i++) {
+                    LIMSSampleDTO sample = manifest.getSampleInformation().get(i);
+                    String serialNumber = serialNumbers.get(i);
+
+                    LIMSBarcode limsBarcode = new LIMSBarcode();
+                    limsBarcode.setUuid(UUID.randomUUID().toString());
+                    limsBarcode.setManifestId(manifest.getManifestID());
+                    limsBarcode.setTestId(0);
+                    limsBarcode.setSampleId(sample.getSampleID());
+                    limsBarcode.setSerialNumber(Integer.parseInt(serialNumber));
+
+                    limsBarcodeRepository.save(limsBarcode);
+                }
+            } else {
+                LOG.warn("Mismatch between sample count and serial numbers count for manifest {}", manifest.getManifestID());
+            }
+
+            return serialNumbers;
         }
 
-        return serialNumbers;
+        return null;
     }
-
     public List<LIMSBarcodeResponseDTO> generateBarcodes(List<String> serialNumbers){
         return serialNumbers.stream().map(serialNumber -> {
             try{
@@ -169,6 +194,16 @@ public class LIMSBarcodeService {
                 return new LIMSBarcodeResponseDTO(serialNumber, "");
             }
         }).collect(Collectors.toList());
+    }
+
+    public List<LIMSBarcode> getManifestBarcodes(int manifestId) {
+        LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(manifestId));
+        return limsBarcodeRepository.findLIMSBarcodesByManifestID(manifest.getManifestID());
+    }
+
+    public LIMSBarcode checkManifestBarcode(int manifestId) {
+        LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(manifestId));
+        return limsBarcodeRepository.checkBarcodesByManifestID(manifest.getManifestID());
     }
 
 }
