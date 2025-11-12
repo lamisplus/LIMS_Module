@@ -202,13 +202,14 @@ public class LimsResultService {
         // Remove comparison symbols <, >, ≤, ≥ and extra spaces
         resultString = resultString.replaceAll("^[<>]=?|\\s+", "");
 
-        if (resultString.equalsIgnoreCase("NotDetected")) {
+        if (resultString.equalsIgnoreCase("NotDetected") ||
+                resultString.equalsIgnoreCase("TargetNotDetected") ) {
             return "0";
         }
 
-        if (resultString.equalsIgnoreCase("TargetNotDetected")) {
-            return "9";
-        }
+//        if (resultString.equalsIgnoreCase("TargetNotDetected")) {
+//            return "9";
+//        }
 
         if (resultString.equalsIgnoreCase("Titermin")) {
             return "10";

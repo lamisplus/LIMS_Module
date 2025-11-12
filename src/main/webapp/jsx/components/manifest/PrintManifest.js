@@ -285,24 +285,24 @@ const PrintManifest = (props) => {
                   >
                     Resend Manifest
                   </MatButton>
-                ) : (
-                  <MatButton
-                    variant="contained"
-                    color="primary"
-                    style={{
-                      backgroundColor: "#014d88",
-                      color: "#fff",
-                    }}
-                    startIcon={<QrCode2Icon />}
-                    onClick={getBarcode}
-                  >
-                    Generate Barcode{" "}
-                    {download && (
-                      <span>
-                        <CircularProgress color="secondary" />
-                      </span>
-                    )}
-                  </MatButton>
+                ) : (""
+//                  <MatButton
+//                    variant="contained"
+//                    color="primary"
+//                    style={{
+//                      backgroundColor: "#014d88",
+//                      color: "#fff",
+//                    }}
+//                    startIcon={<QrCode2Icon />}
+//                    onClick={getBarcode}
+//                  >
+//                    Generate Barcode{" "}
+//                    {download && (
+//                      <span>
+//                        <CircularProgress color="secondary" />
+//                      </span>
+//                    )}
+//                  </MatButton>
                 )}
 
                 <MatButton
