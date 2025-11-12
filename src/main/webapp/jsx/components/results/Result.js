@@ -262,20 +262,20 @@ const Result = (props) => {
             " "
           )}
           <p style={{ textAlign: "right" }}>
-//            <MatButton
-//              variant="contained"
-//              color="dark"
-//              className={classes.button}
-//              startIcon={<ArrowDownwardIcon />}
-//              onClick={handleBulkDownload}
-//            >
-//              Download Bulk results{" "}
-//              {download && (
-//                <span>
-//                  <CircularProgress color="secondary" />
-//                </span>
-//              )}
-//            </MatButton>
+            <MatButton
+              variant="contained"
+              color="dark"
+              className={classes.button}
+              startIcon={<ArrowDownwardIcon />}
+              onClick={handleBulkDownload}
+            >
+              Download Bulk results{" "}
+              {download && (
+                <span>
+                  <CircularProgress color="secondary" />
+                </span>
+              )}
+            </MatButton>
             <MatButton
               variant="contained"
               color="success"
