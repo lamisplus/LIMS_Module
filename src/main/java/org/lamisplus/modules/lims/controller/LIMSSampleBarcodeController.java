@@ -21,12 +21,13 @@ public class LIMSSampleBarcodeController {
     private final LIMSBarcodeService limsBarcodeService;
 
     @PostMapping("/generate")
-    public ResponseEntity<?> generateBarcode(int configId, int manifestId, int count) {
+    public ResponseEntity<?> generateBarcode(int configId, int manifestId, int count, String user) {
         try {
-            List<String> serialNumbers = limsBarcodeService.getSerialNumbers(configId, manifestId, count);
+            List<String> serialNumbers = limsBarcodeService.getSerialNumbers(configId, manifestId, count, user);
 
-            if (serialNumbers != null) {
-                List<LIMSBarcodeResponseDTO> results = limsBarcodeService.generateBarcodes(serialNumbers);
+            List<LIMSBarcodeResponseDTO> results = limsBarcodeService.generateBarcodes(serialNumbers, manifestId, user);
+
+            if (results != null) {
                 return ResponseEntity.ok(ApiResponse.success(results));
             }else{
                 return ResponseEntity.status(201).body(ApiResponse.error("Barcode previously generated for this manifest. "));

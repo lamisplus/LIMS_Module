@@ -47,28 +47,6 @@ public class BarcodeGenerator {
     private static final String START_CODE_B = "11010010000";
     private static final String STOP_PATTERN = "11000111010";
 
-    public static String generateBarcode(String data, int width, int height) {
-        if (data == null || data.trim().isEmpty()) {
-            throw new IllegalArgumentException("Barcode data cannot be null or empty");
-        }
-
-        if (width < 100 || height < 50) {
-            throw new IllegalArgumentException("Minimum barcode size is 100x50 pixels");
-        }
-
-        if (data.length() > 50) {
-            throw new IllegalArgumentException("Barcode data too long (max 50 characters)");
-        }
-
-        try {
-            String barcodePattern = encodeToCode128(data);
-            BufferedImage image = createBarcodeImage(barcodePattern, data, width, height);
-            return convertToBase64(image);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate barcode: " + e.getMessage(), e);
-        }
-    }
-
     private static String encodeToCode128(String data) {
         StringBuilder pattern = new StringBuilder();
         pattern.append(START_CODE_B);
@@ -92,9 +70,28 @@ public class BarcodeGenerator {
         return pattern.toString();
     }
 
-    private static BufferedImage createBarcodeImage(String barcodePattern, String data,
+
+    public static String generateLabeledBarcode(String barcodeData, String sampleId, String serialNumber,
+                                                int width, int height) {
+        if (barcodeData == null || barcodeData.trim().isEmpty()) {
+            throw new IllegalArgumentException("Barcode data cannot be null or empty");
+        }
+
+        try {
+            String barcodePattern = encodeToCode128(barcodeData);
+            return createLabeledBarcodeImage(barcodePattern, barcodeData, sampleId, serialNumber, width, height);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate labeled barcode: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Creates a barcode image with sample ID above and serial number below
+     */
+    private static String createLabeledBarcodeImage(String barcodePattern, String barcodeData,
+                                                    String sampleId, String serialNumber,
                                                     int width, int height) {
-        int quietZone = 10;
+        int quietZone = 15;
         int moduleWidth = Math.max(1, (width - 2 * quietZone) / barcodePattern.length());
         int barcodeWidth = moduleWidth * barcodePattern.length();
         int actualWidth = barcodeWidth + 2 * quietZone;
@@ -102,69 +99,125 @@ public class BarcodeGenerator {
         BufferedImage image = new BufferedImage(actualWidth, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2d = image.createGraphics();
 
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        // Setup rendering hints for better quality
+        setupGraphicsQuality(g2d);
 
         // White background
         g2d.setColor(Color.WHITE);
         g2d.fillRect(0, 0, actualWidth, height);
 
+        // Calculate text areas
+        int textAreaHeight = 35;
+        int barcodeAreaHeight = height - (2 * textAreaHeight);
+        int barcodeY = textAreaHeight;
+
+        // Draw sample ID (top label)
+        drawTopLabel(g2d, sampleId, actualWidth, textAreaHeight);
+
         // Draw barcode pattern
-        g2d.setColor(Color.BLACK);
-        int x = quietZone;
+        drawBarcodePattern(g2d, barcodePattern, moduleWidth, quietZone, barcodeY, barcodeAreaHeight);
 
-        for (int i = 0; i < barcodePattern.length(); i++) {
-            if (barcodePattern.charAt(i) == '1') {
-                g2d.fillRect(x, quietZone, moduleWidth, height - 2 * quietZone - 20);
-            }
-            x += moduleWidth;
-        }
-
-        // Draw human-readable text
-        drawBarcodeText(g2d, data, actualWidth, height);
+        // Draw serial number (bottom label)
+        drawBottomLabel(g2d, serialNumber, actualWidth, height, textAreaHeight);
 
         g2d.dispose();
 
         // Scale to requested dimensions if different
         if (actualWidth != width) {
-            return resizeImage(image, width, height);
+            image = resizeImage(image, width, height);
         }
 
-        return image;
+        return convertToBase64(image);
     }
 
-    private static void drawBarcodeText(Graphics2D g2d, String data, int width, int height) {
+    /**
+     * Draws the sample ID above the barcode
+     */
+    private static void drawTopLabel(Graphics2D g2d, String sampleId, int width, int textAreaHeight) {
         g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        g2d.setFont(new Font("Arial", Font.BOLD, 12));
 
         FontMetrics metrics = g2d.getFontMetrics();
-        int textWidth = metrics.stringWidth(data);
-        int textHeight = metrics.getHeight();
-
-        // Center the text horizontally, position at bottom with padding
+        int textWidth = metrics.stringWidth(sampleId);
         int textX = (width - textWidth) / 2;
-        int textY = height - 5;
+        int textY = textAreaHeight - 5; // Position above barcode
 
-        // Optional: Add a white background for the text
+        // Optional: Add background for better readability
         g2d.setColor(Color.WHITE);
-        g2d.fillRect(textX - 2, textY - textHeight + 3, textWidth + 4, textHeight - 2);
+        g2d.fillRect(textX - 3, textY - metrics.getAscent() + 3, textWidth + 6, metrics.getHeight());
 
         g2d.setColor(Color.BLACK);
-        g2d.drawString(data, textX, textY);
+        g2d.drawString(sampleId, textX, textY);
+
+        // Add a small label identifier
+        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+        g2d.drawString("", textX - 45, textY);
     }
 
+    /**
+     * Draws the barcode pattern
+     */
+    private static void drawBarcodePattern(Graphics2D g2d, String barcodePattern, int moduleWidth,
+                                           int quietZone, int startY, int height) {
+        g2d.setColor(Color.BLACK);
+        int x = quietZone;
+
+        for (int i = 0; i < barcodePattern.length(); i++) {
+            if (barcodePattern.charAt(i) == '1') {
+                g2d.fillRect(x, startY, moduleWidth, height);
+            }
+            x += moduleWidth;
+        }
+    }
+
+    /**
+     * Draws the serial number below the barcode
+     */
+    private static void drawBottomLabel(Graphics2D g2d, String serialNumber, int width, int totalHeight, int textAreaHeight) {
+        g2d.setColor(Color.BLACK);
+        g2d.setFont(new Font("Arial", Font.BOLD, 11));
+
+        FontMetrics metrics = g2d.getFontMetrics();
+        int textWidth = metrics.stringWidth(serialNumber);
+        int textX = (width - textWidth) / 2;
+        int textY = totalHeight - 10; // Position at bottom
+
+        // Optional: Add background for better readability
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(textX - 3, textY - metrics.getAscent() + 3, textWidth + 6, metrics.getHeight());
+
+        g2d.setColor(Color.BLACK);
+        g2d.drawString(serialNumber, textX, textY);
+
+        // Add a small label identifier
+        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
+        g2d.drawString("", textX - 30, textY);
+    }
+
+    /**
+     * Sets up graphics quality settings
+     */
+    private static void setupGraphicsQuality(Graphics2D g2d) {
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+    }
+
+    /**
+     * Resizes image while maintaining quality
+     */
     private static BufferedImage resizeImage(BufferedImage original, int newWidth, int newHeight) {
         BufferedImage resized = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2d = resized.createGraphics();
-
-        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        setupGraphicsQuality(g2d);
         g2d.drawImage(original, 0, 0, newWidth, newHeight, null);
         g2d.dispose();
-
         return resized;
     }
 
+    /**
+     * Converts image to base64 data URL
+     */
     private static String convertToBase64(BufferedImage image) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             ImageIO.write(image, "PNG", baos);
@@ -174,34 +227,5 @@ public class BarcodeGenerator {
         }
     }
 
-    // Utility method for bulk generation
-    public static Map<String, String> generateBarcodes(Map<String, String> dataMap,
-                                                       int width, int height) {
-        Map<String, String> results = new HashMap<>();
-        for (Map.Entry<String, String> entry : dataMap.entrySet()) {
-            try {
-                String barcode = generateBarcode(entry.getValue(), width, height);
-                results.put(entry.getKey(), barcode);
-            } catch (Exception e) {
-                results.put(entry.getKey(), "ERROR: " + e.getMessage());
-            }
-        }
-        return results;
-    }
-
-    // Validation method
-    public static boolean isValidBarcodeData(String data) {
-        if (data == null || data.trim().isEmpty() || data.length() > 50) {
-            return false;
-        }
-
-        for (char c : data.toCharArray()) {
-            if (c < 32 || c > 126) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 }
 

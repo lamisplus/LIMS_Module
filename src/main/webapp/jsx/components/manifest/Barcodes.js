@@ -2,12 +2,10 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Link, useHistory } from "react-router-dom";
 import { logo } from "../SampleCollection/pcr";
 import { Card } from "react-bootstrap";
-import Alert from "react-bootstrap/Alert";
 
 import "../SampleCollection/sample.css";
 import axios from "axios";
 import { token, url } from "../../../api";
-import CircularProgress from "@mui/material/CircularProgress";
 
 import { makeStyles } from "@material-ui/core/styles";
 import MatButton from "@material-ui/core/Button";
@@ -98,6 +96,12 @@ const Barcodes = (props) => {
     }
   }, []);
 
+  const print = {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontFamily: "Arial",
+  };
+
   const pageStyle = `@media print {
                   body {
                     background: white;
@@ -108,37 +112,11 @@ const Barcodes = (props) => {
                     font-size: 12px;
                   }
 
-                  .result-container {
-                    box-shadow: none;
-                    max-width: 100%;
-                    padding: 0;
-                    margin: 0;
-                  }
-
-                  .report-header {
-                    margin-bottom: 10px;
-                  }
-
-                  .section {
-                    margin-bottom: 10px;
-                    border: 1px solid #014d88;
-                    page-break-inside: avoid;
-                  }
-
-                  /* .report-table th {
-                    background-color: #014d88 !important;
-                    color: white !important;
-                  } */
-
-                  .report-table td,
-                  .report-table th {
-                    padding: 5px;
-                  }
-
                   @page {
                     size: A4 portrait;
-                    margin: 10mm;
+                    margin: 5mm;
                   }
+                  
             }`;
 
   const componentRef = useRef();
@@ -183,7 +161,6 @@ const Barcodes = (props) => {
                 color="success"
                 className={classes.button}
                 startIcon={<PrintIcon />}
-                disabled={!send ? false : true}
                 onClick={handlePrint}
               >
                 Print
@@ -204,110 +181,119 @@ const Barcodes = (props) => {
               </Link>
             </p>
             <hr />
-            <Row>
-              <Table size="sm">
-                <tbody>
-                  <tr>
-                    <th scope="row"></th>
-                    <th scope="row"></th>
-                    <th scope="row"></th>
-                    <th scope="row">
-                      <h2 className="text-center">
-                        NISRN SAMPLE BARCODES GENERATED
-                      </h2>
-                    </th>
-
-                    <th scope="row">
-                      <img
-                        src={logo}
-                        style={{ width: "80px", height: "80px" }}
-                        alt=""
-                      />
-                    </th>
-                  </tr>
-                </tbody>
-              </Table>
-            </Row>
-            <br />
-            <br />
-            <Row>
-              <Table bordered size="sm">
-                <tbody>
-                  <tr>
-                    <th scope="row">Pick Up Date:</th>
-                    <td>
-                      {manifestObj.dateScheduledForPickup === null
-                        ? " "
-                        : manifestObj.dateScheduledForPickup?.replace("T", " ")}
-                    </td>
-                    <th scope="row">Destination:</th>
-                    <td>{manifestObj.receivingLabName}</td>
-                    <th scope="row">PCR Lab Number:</th>
-                    <td>{manifestObj.receivingLabID}</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Status:</th>
-                    <td>{manifestObj.manifestStatus}</td>
-                    <th scope="row">Manifest Id:</th>
-                    <td>{manifestObj.manifestID}</td>
-                    <th scope="row">Sample Temperature:</th>
-                    <td>
-                      {manifestObj.temperatureAtPickup === ""
-                        ? "Not Provided"
-                        : manifestObj.temperatureAtPickup}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Courier Name:</th>
-                    <td>{manifestObj.courierRiderName}</td>
-                    <th scope="row">Courier Contact:</th>
-                    <td>{"+" + manifestObj.courierContact}</td>
-                    <th scope="row">Test Type:</th>
-                    <td>VL</td>
-                  </tr>
-                </tbody>
-              </Table>
-            </Row>
-            <Row>
-              <Table striped bordered size="sm">
-                <thead style={{ backgroundColor: "#014d88", color: "#fff" }}>
-                  <tr>
-                    <th>S/N</th>
-                    <th>Manifest ID</th>
-                    <th>Sample ID</th>
-                    <th>Barcode Serial Number</th>
-                    <th>Unique Number</th>
-                  </tr>
-                </thead>
-                {serialNumbers.length === 0 ? (
-                  <>
-                    <br />
-                    <h3
-                      style={{
-                        color: "blue",
-                        textAlign: "center",
-                      }}
-                    >
-                      No Barcodes Generated For this Manifest
-                    </h3>
-                  </>
-                ) : (
+            <div ref={componentRef}>
+              <Row>
+                <Table size="sm">
                   <tbody>
-                    {serialNumbers &&
-                      serialNumbers.map((data, i) => (
-                        <tr key={i}>
-                          <td>{i + 1}</td>
-                          <td>{data.manifestId}</td>
+                    <tr>
+                      <th scope="row"></th>
+                      <th scope="row"></th>
+                      <th scope="row"></th>
+                      <th scope="row">
+                        <h2 className="text-center">
+                          NISRN SAMPLE BARCODES GENERATED
+                        </h2>
+                      </th>
 
-                          <td>{data.sampleId}</td>
-                          <td>{data.serialNumber}</td>
-                          <td>{data.uuid}</td>
-                        </tr>
-                      ))}
+                      <th scope="row">
+                        <img
+                          src={logo}
+                          style={{ width: "80px", height: "80px" }}
+                          alt=""
+                        />
+                      </th>
+                    </tr>
                   </tbody>
-                )}
-              </Table>
-            </Row>
+                </Table>
+              </Row>
+              <br />
+              <br />
+              <Row>
+                <Table bordered size="sm" style={print}>
+                  <tbody>
+                    <tr>
+                      <th scope="row">Pick Up Date:</th>
+                      <td>
+                        {manifestObj.dateScheduledForPickup === null
+                          ? " "
+                          : manifestObj.dateScheduledForPickup?.replace(
+                              "T",
+                              " "
+                            )}
+                      </td>
+                      <th scope="row">Destination:</th>
+                      <td>{manifestObj.receivingLabName}</td>
+                      <th scope="row">PCR Lab Number:</th>
+                      <td>{manifestObj.receivingLabID}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Status:</th>
+                      <td>{manifestObj.manifestStatus}</td>
+                      <th scope="row">Manifest Id:</th>
+                      <td>{manifestObj.manifestID}</td>
+                      <th scope="row">Sample Temperature:</th>
+                      <td>
+                        {manifestObj.temperatureAtPickup === ""
+                          ? "Not Provided"
+                          : manifestObj.temperatureAtPickup}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Courier Name:</th>
+                      <td>{manifestObj.courierRiderName}</td>
+                      <th scope="row">Courier Contact:</th>
+                      <td>{"+" + manifestObj.courierContact}</td>
+                      <th scope="row">Test Type:</th>
+                      <td>VL</td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </Row>
+              <Row>
+                <Table striped bordered size="sm">
+                  <thead style={{ backgroundColor: "#014d88", color: "#fff" }}>
+                    <tr>
+                      <th>Unique Number</th>
+                      <th>Manifest ID</th>
+                      <th>Sample ID</th>
+                      <th>Barcode Serial</th>
+                      <th>Status</th>
+                      <th>Created By</th>
+                      <th>Date Generated</th>
+                    </tr>
+                  </thead>
+                  {serialNumbers.length === 0 ? (
+                    <>
+                      <br />
+                      <h3
+                        style={{
+                          color: "blue",
+                          textAlign: "center",
+                        }}
+                      >
+                        No Barcodes Generated For this Manifest
+                      </h3>
+                    </>
+                  ) : (
+                    <tbody>
+                      {serialNumbers &&
+                        serialNumbers.map((data, i) => (
+                          <tr key={i}>
+                            <td>{data.uuid}</td>
+                            <td>{data.manifestId}</td>
+
+                            <td>{data.sampleId}</td>
+                            <td>{data.serialNumber}</td>
+                            <td>{data.status}</td>
+                            <td>{data.createdBy}</td>
+                            <td>{data.createdDate}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  )}
+                </Table>
+              </Row>
+            </div>
           </>
         </Card.Body>
       </Card>

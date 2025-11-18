@@ -16,4 +16,17 @@
                  stripComments="true"/>
     </changeSet>
 
+    <changeSet id="lims-20251118-0001" author="victor">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="lims_barcode"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE lims_barcode ADD COLUMN IF NOT EXISTS status VARCHAR(20);
+
+            ALTER TABLE lims_barcode ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
+
+            ALTER TABLE lims_barcode ADD COLUMN IF NOT EXISTS created_date TIMESTAMP DEFAULT NOW();
+        </sql>
+    </changeSet>
+
 </databaseChangeLog>

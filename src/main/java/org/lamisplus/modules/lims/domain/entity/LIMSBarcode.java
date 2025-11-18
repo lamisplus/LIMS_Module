@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @AllArgsConstructor
@@ -26,4 +27,16 @@ public class LIMSBarcode {
     private Integer testId;
     @Column(name = "serial_number")
     private Integer serialNumber;
+    @Column(name = "status")
+    private String status;
+    @Column(name = "created_date", updatable = false)
+    private LocalDateTime createdDate;
+    @Column(name = "created_by", length = 50)
+    private String createdBy;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdDate = LocalDateTime.now();
+    }
+
 }

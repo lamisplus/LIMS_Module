@@ -135,7 +135,7 @@ public class LIMSBarcodeService {
         }
     }
 
-    public List<String> getSerialNumbers(int configId, int manifestId, int count) {
+    public List<String> getSerialNumbers(int configId, int manifestId, int count, String user) {
         RestTemplate restTemplate = GetRestTemplate();
         HttpHeaders headers = GetHTTPHeaders();
 //        LIMSConfig config = limsConfigRepository.findById(configId).orElse(null);
@@ -153,57 +153,60 @@ public class LIMSBarcodeService {
 
         List<String> serialNumbers = new ArrayList<>();
 
+        for (JsonNode sn : serialResponseDTO) {
+            serialNumbers.add(sn.asText());
+        }
+        return serialNumbers;
+    }
+    public List<LIMSBarcodeResponseDTO> generateBarcodes(List<String> serialNumbers, int manifestId, String user) {
+        LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(manifestId));
+        List<LIMSBarcodeResponseDTO> responseDTOs = new ArrayList<>();
+
         LIMSBarcode existingBarcodes = limsBarcodeRepository.checkBarcodesByManifestID(manifest.getManifestID());
 
         if (existingBarcodes == null) {
-
-            for (JsonNode sn : serialResponseDTO) {
-                serialNumbers.add(sn.asText());
-            }
 
             if (!serialNumbers.isEmpty() && serialNumbers.size() == manifest.getSampleInformation().size()) {
                 for (int i = 0; i < manifest.getSampleInformation().size(); i++) {
                     LIMSSampleDTO sample = manifest.getSampleInformation().get(i);
                     String serialNumber = serialNumbers.get(i);
+                    String sampleId = sample.getSampleID();
 
+                    // Create and save barcode entity
                     LIMSBarcode limsBarcode = new LIMSBarcode();
                     limsBarcode.setUuid(UUID.randomUUID().toString());
                     limsBarcode.setManifestId(manifest.getManifestID());
                     limsBarcode.setTestId(0);
-                    limsBarcode.setSampleId(sample.getSampleID());
+                    limsBarcode.setSampleId(sampleId);
                     limsBarcode.setSerialNumber(Integer.parseInt(serialNumber));
-
+                    limsBarcode.setStatus("Assigned");
+                    limsBarcode.setCreatedBy(user);
                     limsBarcodeRepository.save(limsBarcode);
+
+                    // Generate barcode with both sample ID and serial number
+                    try {
+                        String barcodeData = sampleId + "_" + serialNumber;
+
+                        String img = BarcodeGenerator.generateLabeledBarcode(barcodeData, sampleId, serialNumber, 400, 100);
+                        responseDTOs.add(new LIMSBarcodeResponseDTO(serialNumber, img, sampleId));
+                    } catch (Exception ex) {
+                        LOG.error("Failed to generate barcode for sample {} with serial {}", sampleId, serialNumber, ex);
+                        responseDTOs.add(new LIMSBarcodeResponseDTO(serialNumber, "", sampleId));
+                    }
                 }
             } else {
-                LOG.warn("Mismatch between sample count and serial numbers count for manifest {}", manifest.getManifestID());
+                LOG.warn("Mismatch between sample count ({}) and serial numbers count ({}) for manifest {}",
+                        manifest.getSampleInformation().size(), serialNumbers.size(), manifest.getManifestID());
+                throw new IllegalArgumentException("Sample count and serial numbers count mismatch");
             }
 
-            return serialNumbers;
+            return responseDTOs;
         }
-
         return null;
     }
-    public List<LIMSBarcodeResponseDTO> generateBarcodes(List<String> serialNumbers){
-        return serialNumbers.stream().map(serialNumber -> {
-            try{
-                //String img = BarcodeQRUtil.generateBarcode(serialNumber, 400, 100);
-                String img = BarcodeGenerator.generateBarcode(serialNumber, 400, 100);
-                return new LIMSBarcodeResponseDTO(serialNumber, img);
-            }catch(Exception ex) {
-                return new LIMSBarcodeResponseDTO(serialNumber, "");
-            }
-        }).collect(Collectors.toList());
-    }
-
     public List<LIMSBarcode> getManifestBarcodes(int manifestId) {
         LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(manifestId));
         return limsBarcodeRepository.findLIMSBarcodesByManifestID(manifest.getManifestID());
-    }
-
-    public LIMSBarcode checkManifestBarcode(int manifestId) {
-        LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(manifestId));
-        return limsBarcodeRepository.checkBarcodesByManifestID(manifest.getManifestID());
     }
 
 }

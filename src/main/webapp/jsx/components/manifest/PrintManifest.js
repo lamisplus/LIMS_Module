@@ -187,12 +187,13 @@ const PrintManifest = (props) => {
 
   const getBarcode = async () => {
     const serverId = JSON.parse(localStorage.getItem("configId"));
+    const { userName } = JSON.parse(localStorage.getItem("user_account"));
     const manifestId = sampleObj.id;
     const count = sampleObj.sampleInformation.length;
     setDownload(true);
     await axios
       .post(
-        `${url}barcodes/generate?configId=${serverId}&manifestId=${manifestId}&count=${count}`,
+        `${url}barcodes/generate?configId=${serverId}&manifestId=${manifestId}&count=${count}&user=${userName}`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -285,24 +286,24 @@ const PrintManifest = (props) => {
                   >
                     Resend Manifest
                   </MatButton>
-                ) : (""
-//                  <MatButton
-//                    variant="contained"
-//                    color="primary"
-//                    style={{
-//                      backgroundColor: "#014d88",
-//                      color: "#fff",
-//                    }}
-//                    startIcon={<QrCode2Icon />}
-//                    onClick={getBarcode}
-//                  >
-//                    Generate Barcode{" "}
-//                    {download && (
-//                      <span>
-//                        <CircularProgress color="secondary" />
-//                      </span>
-//                    )}
-//                  </MatButton>
+                ) : (
+                  <MatButton
+                    variant="contained"
+                    color="primary"
+                    style={{
+                      backgroundColor: "#014d88",
+                      color: "#fff",
+                    }}
+                    startIcon={<QrCode2Icon />}
+                    onClick={getBarcode}
+                  >
+                    Generate Barcode{" "}
+                    {download && (
+                      <span>
+                        <CircularProgress color="secondary" />
+                      </span>
+                    )}
+                  </MatButton>
                 )}
 
                 <MatButton

@@ -8,4 +8,5 @@ import lombok.Data;
 public class LIMSBarcodeResponseDTO {
     private String serialNumber;
     private String barcodeImage;
+    private String sampleId;
 }
