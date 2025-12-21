@@ -1,78 +1,78 @@
-BEGIN TRANSACTION;
-
-UPDATE laboratory_result
-SET
-    result_reported = REPLACE(result_reported, ',', ''),
-    result_report = REPLACE(result_report, ',', '')
-WHERE
-    result_reported LIKE '%,%' OR
-    result_report LIKE '%,%';
-
-UPDATE laboratory_result
-SET
-    result_reported = CASE
-        WHEN UPPER(TRIM(result_reported)) LIKE '<%' OR
-             UPPER(TRIM(result_reported)) LIKE '>%' OR
-             UPPER(TRIM(result_reported)) LIKE '<=%' OR
-             UPPER(TRIM(result_reported)) LIKE '>=%' THEN
-            TRIM(REGEXP_REPLACE(result_reported, '[<>]=?', ''))
-        ELSE result_reported
-    END,
-    result_report = CASE
-        WHEN UPPER(TRIM(result_report)) LIKE '<%' OR
-             UPPER(TRIM(result_report)) LIKE '>%' OR
-             UPPER(TRIM(result_report)) LIKE '<=%' OR
-             UPPER(TRIM(result_report)) LIKE '>=%' THEN
-            TRIM(REGEXP_REPLACE(result_report, '[<>]=?', ''))
-        ELSE result_report
-    END
-WHERE
-    UPPER(TRIM(result_reported)) LIKE '<%' OR
-    UPPER(TRIM(result_reported)) LIKE '>%' OR
-    UPPER(TRIM(result_report)) LIKE '<%' OR
-    UPPER(TRIM(result_report)) LIKE '>%';
-
-UPDATE laboratory_result
-SET
-    result_reported = CASE
-        WHEN result_reported ~ '^[0-9]+[A-Za-z/]' THEN
-            SUBSTRING(result_reported FROM '^([0-9]+)')
-        ELSE result_reported
-    END,
-    result_report = CASE
-        WHEN result_report ~ '^[0-9]+[A-Za-z/]' THEN
-            SUBSTRING(result_report FROM '^([0-9]+)')
-        ELSE result_report
-    END
-WHERE
-    result_reported ~ '^[0-9]+[A-Za-z/]' OR
-    result_report ~ '^[0-9]+[A-Za-z/]';
-
-UPDATE laboratory_result
-SET
-    result_reported = '10',
-    result_report = '10'
-WHERE
-    UPPER(TRIM(result_reported)) = 'TITERMIN'
-    OR UPPER(TRIM(result_report)) = 'TITERMIN';
-
-UPDATE laboratory_result
-SET
-    result_reported = '0',
-    result_report = '0'
-WHERE
-    UPPER(TRIM(result_reported)) IN (
-        'NOTDETECTED', 'TARGETNOTDETECTED',
-         'TARGET NOT DETECTED', 'TARGET NOT,DETECTED', 'NOT DETECTED',
-         'NOT DETECTED'
-    )
-    OR UPPER(TRIM(result_report)) IN (
-        'NOTDETECTED', 'TARGETNOTDETECTED',
-         'TARGET NOT DETECTED', 'TARGET NOT,DETECTED', 'NOT DETECTED',
-         'NOT DETECTED'
-    )
-    OR UPPER(TRIM(result_reported)) LIKE '%0%X%0%'
-    OR UPPER(TRIM(result_report)) LIKE '%0%X%0%';
-
-COMMIT;
-
+--BEGIN TRANSACTION;
+--
+--UPDATE laboratory_result
+--SET
+--    result_reported = REPLACE(result_reported, ',', ''),
+--    result_report = REPLACE(result_report, ',', '')
+--WHERE
+--    result_reported LIKE '%,%' OR
+--    result_report LIKE '%,%';
+--
+--UPDATE laboratory_result
+--SET
+--    result_reported = CASE
+--        WHEN UPPER(TRIM(result_reported)) LIKE '<%' OR
+--             UPPER(TRIM(result_reported)) LIKE '>%' OR
+--             UPPER(TRIM(result_reported)) LIKE '<=%' OR
+--             UPPER(TRIM(result_reported)) LIKE '>=%' THEN
+--            TRIM(REGEXP_REPLACE(result_reported, '[<>]=?', ''))
+--        ELSE result_reported
+--    END,
+--    result_report = CASE
+--        WHEN UPPER(TRIM(result_report)) LIKE '<%' OR
+--             UPPER(TRIM(result_report)) LIKE '>%' OR
+--             UPPER(TRIM(result_report)) LIKE '<=%' OR
+--             UPPER(TRIM(result_report)) LIKE '>=%' THEN
+--            TRIM(REGEXP_REPLACE(result_report, '[<>]=?', ''))
+--        ELSE result_report
+--    END
+--WHERE
+--    UPPER(TRIM(result_reported)) LIKE '<%' OR
+--    UPPER(TRIM(result_reported)) LIKE '>%' OR
+--    UPPER(TRIM(result_report)) LIKE '<%' OR
+--    UPPER(TRIM(result_report)) LIKE '>%';
+--
+--UPDATE laboratory_result
+--SET
+--    result_reported = CASE
+--        WHEN result_reported ~ '^[0-9]+[A-Za-z/]' THEN
+--            SUBSTRING(result_reported FROM '^([0-9]+)')
+--        ELSE result_reported
+--    END,
+--    result_report = CASE
+--        WHEN result_report ~ '^[0-9]+[A-Za-z/]' THEN
+--            SUBSTRING(result_report FROM '^([0-9]+)')
+--        ELSE result_report
+--    END
+--WHERE
+--    result_reported ~ '^[0-9]+[A-Za-z/]' OR
+--    result_report ~ '^[0-9]+[A-Za-z/]';
+--
+--UPDATE laboratory_result
+--SET
+--    result_reported = '10',
+--    result_report = '10'
+--WHERE
+--    UPPER(TRIM(result_reported)) = 'TITERMIN'
+--    OR UPPER(TRIM(result_report)) = 'TITERMIN';
+--
+--UPDATE laboratory_result
+--SET
+--    result_reported = '0',
+--    result_report = '0'
+--WHERE
+--    UPPER(TRIM(result_reported)) IN (
+--        'NOTDETECTED', 'TARGETNOTDETECTED',
+--         'TARGET NOT DETECTED', 'TARGET NOT,DETECTED', 'NOT DETECTED',
+--         'NOT DETECTED'
+--    )
+--    OR UPPER(TRIM(result_report)) IN (
+--        'NOTDETECTED', 'TARGETNOTDETECTED',
+--         'TARGET NOT DETECTED', 'TARGET NOT,DETECTED', 'NOT DETECTED',
+--         'NOT DETECTED'
+--    )
+--    OR UPPER(TRIM(result_reported)) LIKE '%0%X%0%'
+--    OR UPPER(TRIM(result_report)) LIKE '%0%X%0%';
+--
+--COMMIT;
+--
