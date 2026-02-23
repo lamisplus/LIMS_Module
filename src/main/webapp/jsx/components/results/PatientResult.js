@@ -56,7 +56,7 @@ class PatientResult extends React.Component {
                   <tr>
                     <th>Manifest ID</th>
                     <td>{samples.manifestID}</td>
-                    <th>Surname Name</th>
+                    <th>Surname</th>
                     <td>{samples.surName}</td>
                     <th>First Name</th>
                     <td>{samples.firstName}</td>

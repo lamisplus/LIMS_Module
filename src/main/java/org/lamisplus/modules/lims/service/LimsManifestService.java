@@ -1,10 +1,12 @@
 package org.lamisplus.modules.lims.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.zookeeper.proto.ErrorResponse;
 import org.jetbrains.annotations.Nullable;
 import org.lamisplus.modules.base.domain.dto.PageDTO;
 import org.lamisplus.modules.base.domain.entities.OrganisationUnit;
@@ -28,10 +30,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -217,17 +223,25 @@ public class LimsManifestService {
     }
 
     public RestTemplate GetRestTemplate() {
-        RestTemplate restTemplate = new RestTemplate();
+    RestTemplate restTemplate = new RestTemplate();
 
-        //set message converters
-        List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-        converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
-        messageConverters.add(converter);
-        restTemplate.setMessageConverters(messageConverters);
+    for (HttpMessageConverter<?> converter : restTemplate.getMessageConverters()) {
+        if (converter instanceof MappingJackson2HttpMessageConverter) {
+            MappingJackson2HttpMessageConverter jacksonConverter =
+                    (MappingJackson2HttpMessageConverter) converter;
 
-        return restTemplate;
+            List<MediaType> mediaTypes = new ArrayList<>(jacksonConverter.getSupportedMediaTypes());
+            mediaTypes.add(MediaType.TEXT_HTML);
+            mediaTypes.add(MediaType.APPLICATION_OCTET_STREAM);
+            mediaTypes.add(MediaType.ALL);
+            jacksonConverter.setSupportedMediaTypes(mediaTypes);
+        }
     }
+
+    restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
+
+    return restTemplate;
+}
 
     private LIMSLoginResponseDTO LoginToLIMS(RestTemplate restTemplate, HttpHeaders headers, LIMSConfig config) {
         LIMSLoginRequestDTO loginRequestDTO = new LIMSLoginRequestDTO();
@@ -275,10 +289,16 @@ public class LimsManifestService {
         return manifestResponse.getBody();
     }
 
-    private LIMSResultsResponseDTO GetResultsRequest(RestTemplate restTemplate, HttpHeaders headers, LIMSLoginResponseDTO loginResponseDTO, int ManifestId, LIMSConfig config) {
+    private LIMSResultsResponseDTO GetResultsRequest(
+            RestTemplate restTemplate,
+            HttpHeaders headers,
+            LIMSLoginResponseDTO loginResponseDTO,
+            int ManifestId,
+            LIMSConfig config
+    ) {
         LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(ManifestId));
-        LIMSResultsRequestDTO requestDTO = new LIMSResultsRequestDTO();
 
+        LIMSResultsRequestDTO requestDTO = new LIMSResultsRequestDTO();
         requestDTO.setToken(loginResponseDTO.getJwt());
         requestDTO.setManifestID(manifest.getManifestID());
         requestDTO.setReceivingPCRLabID(manifest.getReceivingLabID());
@@ -286,13 +306,97 @@ public class LimsManifestService {
         requestDTO.setTestType("VL");
         requestDTO.setSendingFacilityID(manifest.getSendingFacilityID());
         requestDTO.setSendingFacilityName(manifest.getSendingFacilityName());
-//        LogInfo("RESULTS_REQUEST", requestDTO);
 
         HttpEntity<LIMSResultsRequestDTO> manifestEntity = new HttpEntity<>(requestDTO, headers);
-        ResponseEntity<LIMSResultsResponseDTO> manifestResponse = restTemplate.exchange(config.getServerUrl() + resultsUrl, HttpMethod.POST, manifestEntity, LIMSResultsResponseDTO.class);
-//        LogInfo("RESULTS_RESPONSE", manifestResponse.getBody());
 
-        return manifestResponse.getBody();
+        try {
+            ResponseEntity<String> rawResponse = restTemplate.exchange(
+                    config.getServerUrl() + resultsUrl,
+                    HttpMethod.POST,
+                    manifestEntity,
+                    String.class
+            );
+
+            String responseBody = rawResponse.getBody();
+
+            if (!rawResponse.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("LIMS server returned non-success HTTP status: " + rawResponse.getStatusCode());
+            }
+
+            if (responseBody == null || responseBody.isEmpty()) {
+                throw new RuntimeException("Empty response received from LIMS server.");
+            }
+
+            if (responseBody.contains("\"status\":\"error\"") ||
+                    responseBody.contains("\"message\"")) {
+                throw new RuntimeException("LIMS returned an error response: " + responseBody);
+            }
+
+            String cleanedText = cleanJson(responseBody);
+            if (cleanedText.isEmpty()) {
+                throw new RuntimeException("Failed to clean LIMS response: response is empty after cleaning.");
+            }
+
+            String jsonPart = extractJsonFromText(cleanedText);
+            if (jsonPart.isEmpty()) {
+                throw new RuntimeException("Failed to extract JSON content from LIMS response.");
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            LIMSResultsResponseDTO result = mapper.readValue(jsonPart, LIMSResultsResponseDTO.class);
+            if (result == null) {
+                throw new RuntimeException("Parsed LIMS result is null after deserialization.");
+            }
+
+            return result;
+
+        } catch (HttpStatusCodeException ex) {
+            String errorBody = ex.getResponseBodyAsString();
+            throw new RuntimeException(String.format(
+                    "HTTP error from LIMS: Status %s, Body: %s",
+                    ex.getStatusCode(),
+                    errorBody
+            ), ex);
+
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException("Failed to parse LIMS JSON response: invalid JSON format", ex);
+
+        } catch (Exception ex) {
+            throw new RuntimeException("Unexpected error while requesting LIMS results: " + ex.getMessage(), ex);
+        }
+    }
+
+    private String cleanJson(String rawJson) {
+        if (rawJson == null) {
+            return null;
+        }
+        return rawJson.replaceAll("[\\x00-\\x1F]", "");
+    }
+
+    /**
+     * Extracts JSON object from a text that may have leading/trailing notices or HTML.
+     */
+    private String extractJsonFromText(String text) {
+        int startIndex = text.indexOf('{');
+        int endIndex = text.lastIndexOf('}');
+        if (startIndex >= 0 && endIndex > startIndex) {
+            return text.substring(startIndex, endIndex + 1).trim();
+        }
+        throw new RuntimeException("No valid JSON object found in response: " + text);
+    }
+
+    public Optional<LIMSManifest> getManifestById(int id) {
+        return limsManifestRepository.findLIMSManifestByManifestID(id);
+    }
+
+    public Optional<LIMSSampleProjection> getSampleByTestId(int testId, String id) {
+            return limsManifestRepository.findLIMSSampleBySampleIDAndTestID(testId, id);
+    }
+
+    public Optional<LIMSSampleProjection> getSampleById(String id) {
+        return limsManifestRepository.findLIMSSampleBySampleID(id);
     }
 
     public LIMSResultsResponseDTO DownloadResultsFromLIMS(int id, int configId) {
@@ -306,7 +410,7 @@ public class LimsManifestService {
 
         //Get results
         LIMSResultsResponseDTO response = GetResultsRequest(restTemplate, headers, loginResponseDTO, id, config);
-//        LOG.info("RESPONSE:"+response);
+        //LOG.info("RESPONSE2:"+response);
 
         try {
             List<LIMSResultDTO> viralLoadTestReport = response.getViralLoadTestReport();

@@ -30,7 +30,6 @@ public class LimsResultService {
     private final LimsMapper limsMapper;
     private final CurrentFacility currentFacility;
 
-
     public LIMSResult Save(LIMSResult result, String hospitalNumber) {
         LOG.info("Transaction Name: {}", TransactionSynchronizationManager.getCurrentTransactionName());
         String personUuid = testRepository.getPersonUuidByHospitalNum(hospitalNumber)
@@ -53,7 +52,6 @@ public class LimsResultService {
         return previousResult.isEmpty() ? limsResultRepository.save(result) : result;
     }
 
-
     public LIMSResult Update(LIMSResult result, int id) {
         return limsResultRepository.save(result);
     }
@@ -73,7 +71,6 @@ public class LimsResultService {
         dto.setResults(results);
         return dto;
     }
-
 
     public boolean saveResultInLabModule(LIMSResult result, String personUuid) {
         try {
@@ -124,10 +121,24 @@ public class LimsResultService {
         return true;
     }
 
-
     public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
-        LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
-        LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
+        String limsAssayDate = result.getAssayDate();
+        String limsResultDate = result.getResultDate();
+        LocalDateTime assayDate;
+        LocalDateTime reportedDate;
+
+        if (limsAssayDate == null || limsAssayDate.isEmpty()) {
+            assayDate = LocalDateTime.parse(result.getVisitDate() + " 00:00:00", formatter);
+        }else {
+            assayDate = LocalDateTime.parse(limsAssayDate + " 00:00:00", formatter);
+        }
+
+        if (limsResultDate == null || limsResultDate.isEmpty()) {
+            reportedDate = LocalDateTime.parse(result.getApprovalDate() + " 00:00:00", formatter);
+        }else {
+            reportedDate = LocalDateTime.parse(limsResultDate + " 00:00:00", formatter);
+        }
+
         LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
         String pcrLabSampleNumber = result.getPcrLabSampleNumber();
         String approvedBy = result.getApprovedBy();
@@ -143,8 +154,24 @@ public class LimsResultService {
     }
 
     public void insertLabResult(Integer patientId, String personUuid, LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
-        LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
-        LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
+//        LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
+//        LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
+        String limsAssayDate = result.getAssayDate();
+        String limsResultDate = result.getResultDate();
+        LocalDateTime assayDate;
+        LocalDateTime reportedDate;
+
+        if (limsAssayDate == null || limsAssayDate.isEmpty()) {
+            assayDate = LocalDateTime.parse(result.getVisitDate() + " 00:00:00", formatter);
+        }else {
+            assayDate = LocalDateTime.parse(limsAssayDate + " 00:00:00", formatter);
+        }
+
+        if (limsResultDate == null || limsResultDate.isEmpty()) {
+            reportedDate = LocalDateTime.parse(result.getApprovalDate() + " 00:00:00", formatter);
+        }else {
+            reportedDate = LocalDateTime.parse(limsResultDate + " 00:00:00", formatter);
+        }
         LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
         String pcrLabSampleNumber = result.getPcrLabSampleNumber();
         String approvedBy = result.getApprovedBy();
@@ -165,36 +192,34 @@ public class LimsResultService {
         );
     }
 
-
-    /**
-     * Extracts numeric parts from a test result string.
-     * 
-     * Side effects:
-     * 1. If input is "NotDetected" (case-insensitive), returns "0"
-     * 2. If input is null or empty, returns null
-     * 3. Extracts only digits and at most one decimal point from the input
-     * 4. If no numeric part is found or only a decimal point is found, returns null
-     * 5. Non-numeric characters (except one decimal point) are removed
-     * 6. If multiple decimal points exist, only the first one is kept
-     * 
-     * @param resultString The test result string to process
-     * @return The extracted numeric value as a string, or null if no valid numeric value found
-     */
     public static String extractNumericValue(String resultString) {
-        if (resultString != null && resultString.equalsIgnoreCase("NotDetected")) {
-            resultString = "0";
-            return resultString;
-        }
-
-        if (resultString == null || resultString.isEmpty()) {
+        if (resultString == null || resultString.trim().isEmpty()) {
             return null;
         }
+
+        resultString = resultString.trim();
+
+        // Remove comparison symbols <, >, ≤, ≥ and extra spaces
+        resultString = resultString.replaceAll("^[<>]=?|\\s+", "");
+
+        if (resultString.equalsIgnoreCase("NotDetected") ||
+                resultString.equalsIgnoreCase("TargetNotDetected") ) {
+            return "0";
+        }
+
+//        if (resultString.equalsIgnoreCase("TargetNotDetected")) {
+//            return "9";
+//        }
+
+        if (resultString.equalsIgnoreCase("Titermin")) {
+            return "10";
+        }
+
 
         StringBuilder numericPart = new StringBuilder();
         boolean decimalFound = false;
 
-        for (int i = 0; i < resultString.length(); i++) {
-            char c = resultString.charAt(i);
+        for (char c : resultString.toCharArray()) {
             if (Character.isDigit(c)) {
                 numericPart.append(c);
             } else if (c == '.' && !decimalFound) {
@@ -207,7 +232,13 @@ public class LimsResultService {
             return null;
         }
 
-        return numericPart.toString();
+        try {
+            double value = Double.parseDouble(numericPart.toString());
+            long roundedValue = Math.round(value);
+            return String.valueOf(roundedValue);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     public LIMSResult getSampleResultBySampleId(String sampleId) {

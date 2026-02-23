@@ -271,7 +271,7 @@ const CreateAManifest = (props) => {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((resp) => {
-        console.log("ready manifests " + resp);
+        //console.log("ready manifests " + resp);
         if (resp) {
           //console.log("sending manifest", resp);
           handleProgress(100);
@@ -288,7 +288,7 @@ const CreateAManifest = (props) => {
       })
       .catch((err) => {
         clearInterval(timer);
-        console.log("err", err);
+        // console.log("err", err);
         toast.error("Error Sending Manifest, Kindly try resending....", {
           position: toast.POSITION.TOP_RIGHT,
           duration: 4000,
@@ -344,7 +344,7 @@ const CreateAManifest = (props) => {
     const serverId = JSON.parse(localStorage.getItem("configId"));
 
     handleProgress(50);
-    console.log(datim);
+    //console.log(datim);
     await axios
       .post(`${url}lims/ready-manifests/${manifestsId}/${serverId}`, datim, {
         headers: { Authorization: `Bearer ${token}` },
@@ -353,7 +353,7 @@ const CreateAManifest = (props) => {
         handleProgress(70);
 
         if (resp) {
-          console.log("re sending manifest", resp);
+          //console.log("re sending manifest", resp);
           handleProgress(100);
         }
 
@@ -631,6 +631,7 @@ const CreateAManifest = (props) => {
                   </FormGroup>
                 </Col>
               </Row>
+
               {saved === false ? (
                 <>
                   <Button

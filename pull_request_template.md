@@ -1,6 +1,6 @@
 ## 📌 Summary
 
-- Ticket: [JIRA-LV3-22](LV3-22)
+- Ticket: [JIRA-LV3-22](https://thepalladiumgroup.atlassian.net/browse/LV3-22)
 - Brief: Improve data exchange for EMR to LIMS.
 - Added a feature for sending data for roving sites.
 
