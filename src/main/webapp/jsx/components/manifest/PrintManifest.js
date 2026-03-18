@@ -197,7 +197,7 @@ const PrintManifest = (props) => {
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       )
       .then((resp) => {
         let barcodes = resp.data.data;

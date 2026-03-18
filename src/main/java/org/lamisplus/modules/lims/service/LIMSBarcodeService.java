@@ -142,8 +142,8 @@ public class LIMSBarcodeService {
 //
 //        assert config != null;
         LIMSConfig CONFIG = new LIMSConfig();
-        CONFIG.setConfigEmail("");
-        CONFIG.setConfigPassword("");
+        CONFIG.setConfigEmail("demo@lims.ng");
+        CONFIG.setConfigPassword("demo@2k1");
 
         LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(manifestId));
 
