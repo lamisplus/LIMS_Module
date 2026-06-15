@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -74,6 +75,7 @@ public class LimsResultService {
 
     public boolean saveResultInLabModule(LIMSResult result, String personUuid) {
         try {
+            LOG.info("test result.. " + result.getTestResult());
             String processedTestResult = extractNumericValue(result.getTestResult());
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -92,16 +94,22 @@ public class LimsResultService {
     }
 
     private boolean handleExistingTest(LIMSResult result, String personUuid, String testResult, DateTimeFormatter formatter) {
-        Integer testId = result.getTestID();
-        LIMSTest limsTest = testRepository.findByTestId(testId);
-        Integer patientId = limsTest.getPatientId();
-        if (limsResultRepository.existsByTestId(testId)) {
-            updateResultFields(result, testId, testResult, formatter);
-        } else {
-            LOG.info("No result instance found with test_id {}", testId);
-            insertLabResult(patientId, personUuid, result, testId, testResult, formatter);
+        try{
+            Integer testId = result.getTestID();
+            LIMSTest limsTest = testRepository.findByTestId(testId);
+            Integer patientId = limsTest.getPatientId();
+            if (limsResultRepository.existsByTestId(testId)) {
+                LOG.info("Updating Lab results.. for test " + limsTest);
+                updateResultFields(result, testId, testResult, formatter);
+            } else {
+                LOG.info("No result instance found with test_id {}", testId);
+                insertLabResult(patientId, personUuid, result, testId, testResult, formatter);
+            }
+            testRepository.updateLabTestOrderStatusToFive(limsTest.getId());
+        }catch (Exception exception) {
+            LOG.error("Error msg " + exception);
         }
-        testRepository.updateLabTestOrderStatusToFive(limsTest.getId());
+
         return true;
     }
 
@@ -121,22 +129,39 @@ public class LimsResultService {
         return true;
     }
 
+    private LocalDate parseDate(String date) {
+        return LocalDate.parse(date);
+    }
+
     public void updateResultFields(LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
         String limsAssayDate = result.getAssayDate();
         String limsResultDate = result.getResultDate();
         LocalDateTime assayDate;
         LocalDateTime reportedDate;
 
+        LocalDate today = LocalDate.now();
+
         if (limsAssayDate == null || limsAssayDate.isEmpty()) {
             assayDate = LocalDateTime.parse(result.getVisitDate() + " 00:00:00", formatter);
         }else {
-            assayDate = LocalDateTime.parse(limsAssayDate + " 00:00:00", formatter);
+            LocalDate parsedDate = parseDate(limsAssayDate);
+            if (parsedDate.isAfter(today)) {
+                assayDate = LocalDateTime.parse(result.getApprovalDate() + " 00:00:00", formatter);
+            }else{
+                assayDate = LocalDateTime.parse(limsAssayDate + " 00:00:00", formatter);
+            }
         }
 
         if (limsResultDate == null || limsResultDate.isEmpty()) {
             reportedDate = LocalDateTime.parse(result.getApprovalDate() + " 00:00:00", formatter);
         }else {
-            reportedDate = LocalDateTime.parse(limsResultDate + " 00:00:00", formatter);
+            LocalDate parsedDate = parseDate(limsResultDate);
+            if (parsedDate.isAfter(today)) {
+                reportedDate = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
+            }else{
+                reportedDate = LocalDateTime.parse(limsResultDate + " 00:00:00", formatter);
+            }
+
         }
 
         LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
@@ -154,23 +179,33 @@ public class LimsResultService {
     }
 
     public void insertLabResult(Integer patientId, String personUuid, LIMSResult result, Integer testId, String testResult, DateTimeFormatter formatter) {
-//        LocalDateTime assayDate = LocalDateTime.parse(result.getAssayDate() + " 00:00:00", formatter);
-//        LocalDateTime reportedDate = LocalDateTime.parse(result.getResultDate() + " 00:00:00", formatter);
         String limsAssayDate = result.getAssayDate();
         String limsResultDate = result.getResultDate();
         LocalDateTime assayDate;
         LocalDateTime reportedDate;
 
+        LocalDate today = LocalDate.now();
+
         if (limsAssayDate == null || limsAssayDate.isEmpty()) {
             assayDate = LocalDateTime.parse(result.getVisitDate() + " 00:00:00", formatter);
         }else {
-            assayDate = LocalDateTime.parse(limsAssayDate + " 00:00:00", formatter);
+            LocalDate parsedDate = parseDate(limsAssayDate);
+            if (parsedDate.isAfter(today)) {
+                assayDate = LocalDateTime.parse(result.getApprovalDate() + " 00:00:00", formatter);
+            }else{
+                assayDate = LocalDateTime.parse(limsAssayDate + " 00:00:00", formatter);
+            }
         }
 
         if (limsResultDate == null || limsResultDate.isEmpty()) {
             reportedDate = LocalDateTime.parse(result.getApprovalDate() + " 00:00:00", formatter);
         }else {
-            reportedDate = LocalDateTime.parse(limsResultDate + " 00:00:00", formatter);
+            LocalDate parsedDate = parseDate(limsResultDate);
+            if (parsedDate.isAfter(today)) {
+                reportedDate = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
+            }else{
+                reportedDate = LocalDateTime.parse(limsResultDate + " 00:00:00", formatter);
+            }
         }
         LocalDateTime dateResultDispatched = LocalDateTime.parse(result.getDateResultDispatched() + " 00:00:00", formatter);
         String pcrLabSampleNumber = result.getPcrLabSampleNumber();

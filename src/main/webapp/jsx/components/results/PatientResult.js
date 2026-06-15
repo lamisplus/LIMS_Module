@@ -174,7 +174,7 @@ class PatientResult extends React.Component {
                     <th>Tested by</th>
                     <td>{samples.testedBy}</td>
                     <th>Tested Date</th>
-                    <td>{samples.dateResultDispatched}</td>
+                    <td>{samples.assayDate}</td>
                   </tr>
                   <tr>
                     <th>Assayed by</th>
@@ -186,7 +186,7 @@ class PatientResult extends React.Component {
                     <th>Approved by</th>
                     <td>{samples.approvedBy}</td>
                     <th>Approval Date</th>
-                    <td>{samples.approvalDate}</td>
+                    <td>{samples.resultDate}</td>
                   </tr>
                   <tr>
                     <th>Reviewed by</th>
