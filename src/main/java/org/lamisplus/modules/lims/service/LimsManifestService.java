@@ -1,5 +1,6 @@
 package org.lamisplus.modules.lims.service;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,6 +39,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -323,7 +325,7 @@ public class LimsManifestService {
                 throw new RuntimeException("LIMS server returned non-success HTTP status: " + rawResponse.getStatusCode());
             }
 
-            if (responseBody == null || responseBody.isEmpty()) {
+            if (responseBody == null || responseBody.trim().isEmpty()) {
                 throw new RuntimeException("Empty response received from LIMS server.");
             }
 
@@ -333,19 +335,44 @@ public class LimsManifestService {
             }
 
             String cleanedText = cleanJson(responseBody);
-            if (cleanedText.isEmpty()) {
+            if (cleanedText.trim().isEmpty()) {
                 throw new RuntimeException("Failed to clean LIMS response: response is empty after cleaning.");
             }
 
             String jsonPart = extractJsonFromText(cleanedText);
-            if (jsonPart.isEmpty()) {
+            if (jsonPart.trim().isEmpty()) {
                 throw new RuntimeException("Failed to extract JSON content from LIMS response.");
             }
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-            LIMSResultsResponseDTO result = mapper.readValue(jsonPart, LIMSResultsResponseDTO.class);
+            //validate Json
+            JsonNode jsonNode;
+            try{
+                jsonNode = mapper.readTree(jsonPart);
+            }catch (JsonParseException ex) {
+                long position = ex.getLocation().getCharOffset();
+                LOG.error(
+                        "Malformed JSON received from LIMS. Line={}, Column={}, Offset={}",
+                        ex.getLocation().getLineNr(),
+                        ex.getLocation().getColumnNr(),
+                        position);
+
+                logJsonContext(jsonPart, (int) position);
+
+                throw new RuntimeException(
+                        "LIMS returned malformed JSON. Check logs for details.",
+                        ex);
+
+            }
+            LIMSResultsResponseDTO result =
+                    mapper.treeToValue(
+                            jsonNode,
+                            LIMSResultsResponseDTO.class);
+
+            //LIMSResultsResponseDTO result = mapper.readValue(jsonPart, LIMSResultsResponseDTO.class);
+
             if (result == null) {
                 throw new RuntimeException("Parsed LIMS result is null after deserialization.");
             }
@@ -367,6 +394,20 @@ public class LimsManifestService {
             throw new RuntimeException("Unexpected error while requesting LIMS results: " + ex.getMessage(), ex);
         }
     }
+
+    private void logJsonContext(String json, int position) {
+
+        int start = Math.max(0, position - 300);
+        int end = Math.min(json.length(), position + 300);
+
+        String snippet = json.substring(start, end);
+
+        LOG.error("========== JSON ERROR CONTEXT ==========");
+        LOG.error("Position : {}", position);
+        LOG.error(snippet);
+        LOG.error("========================================");
+    }
+
 
     private String cleanJson(String rawJson) {
         if (rawJson == null) {
@@ -417,30 +458,110 @@ public class LimsManifestService {
             String manifestID = response.getManifestID();
             Integer manifestId = limsManifestRepository.getManifestId(manifestID).get(0);
             List<LIMSResult> limsResults = resultRepository.getLIMSResultByManifestId(manifestId);
-            if (limsResults.size() < viralLoadTestReport.size()) {
-                System.out.println(" Starting to save result in db--");
-                for (LIMSResultDTO result : viralLoadTestReport) {
-                    result.setManifestRecordID(id);
-                    JsonNode patientIDs = result.getPatientID();
-                    String testID = null;
-                    if (patientIDs != null && patientIDs.isArray()) {
-                        for (int i = 0; i < patientIDs.size(); i++) {
-                            JsonNode entry = patientIDs.get(i);
-                            if ("CLIENTID".equals(entry.path("idTypeCode").asText())) {
-                                testID = entry.path("idNumber").asText();
-                                if ((testID != null) && !testID.trim().isEmpty()) {
-                                    result.setTestID(Integer.valueOf(testID));
-                                    break;
-                                }
 
+            LocalDate today = LocalDate.now();
+
+//            if (limsResults.size() < viralLoadTestReport.size()) {
+//                System.out.println(" Starting to save result in db--");
+//                for (LIMSResultDTO result : viralLoadTestReport) {
+//                    result.setManifestRecordID(id);
+//                    JsonNode patientIDs = result.getPatientID();
+//                    String testID = null;
+//                    if (patientIDs != null && patientIDs.isArray()) {
+//                        for (int i = 0; i < patientIDs.size(); i++) {
+//                            JsonNode entry = patientIDs.get(i);
+//                            if ("CLIENTID".equals(entry.path("idTypeCode").asText())) {
+//                                testID = entry.path("idNumber").asText();
+//                                if ((testID != null) && !testID.trim().isEmpty()) {
+//                                    result.setTestID(Integer.valueOf(testID));
+//                                    break;
+//                                }
+//
+//                            }
+//                        }
+//                    }
+//                    String hospitalNumber = getHospitalNumber(patientIDs);
+////                    System.out.println(result.toString());
+//                    resultService.Save(limsMapper.toResult(result), hospitalNumber);
+//                }
+//            }
+
+            LOG.info("Starting to save/update results in DB...");
+
+            for (LIMSResultDTO result : viralLoadTestReport) {
+
+                result.setManifestRecordID(id);
+
+                JsonNode patientIDs = result.getPatientID();
+                String testID = null;
+
+                if (patientIDs != null && patientIDs.isArray()) {
+                    for (int i = 0; i < patientIDs.size(); i++) {
+                        JsonNode entry = patientIDs.get(i);
+
+                        if ("CLIENTID".equals(entry.path("idTypeCode").asText())) {
+                            testID = entry.path("idNumber").asText();
+
+                            if (testID != null && !testID.trim().isEmpty()) {
+                                result.setTestID(Integer.valueOf(testID));
+                                break;
                             }
                         }
                     }
-                    String hospitalNumber = getHospitalNumber(patientIDs);
-//                    System.out.println(result.toString());
-                    resultService.Save(limsMapper.toResult(result), hospitalNumber);
+                }
+
+                String hospitalNumber = getHospitalNumber(patientIDs);
+                // Find existing result
+                Optional<LIMSResult> existingResultOpt =
+                        resultRepository.findByManifestRecordIDAndTestID(
+                                id,
+                                result.getTestID()
+                        );
+
+                if (existingResultOpt.isPresent()) {
+
+                    LIMSResult existingResult = existingResultOpt.get();
+
+                    boolean shouldUpdate = false;
+
+                    LocalDate parsedAssayDate = parseDate(existingResult.getAssayDate());
+                    // Compare assay date
+                    if (!Objects.equals(existingResult.getAssayDate(),
+                            result.getAssayDate()) || parsedAssayDate.isAfter(today)) {
+                        shouldUpdate = true;
+                    }
+
+                    LocalDate parsedResultDate = parseDate(existingResult.getResultDate());
+                    // Compare result date
+                    if (!Objects.equals(existingResult.getResultDate(),
+                            result.getResultDate()) || parsedResultDate.isAfter(today)) {
+                        shouldUpdate = true;
+                    }
+
+                    if (shouldUpdate) {
+                        LIMSResult updatedResult = limsMapper.toResult(result);
+
+                        updatedResult.setId(existingResult.getId());
+
+                        resultService.Save(updatedResult, hospitalNumber);
+
+                        LOG.info(
+                                "Updated result for Test ID: "
+                                        + result.getTestID());
+                    }
+
+                } else {
+
+                    resultService.Save(
+                            limsMapper.toResult(result),
+                            hospitalNumber);
+
+                    LOG.info(
+                            "Saved new result for Test ID: "
+                                    + result.getTestID());
                 }
             }
+
         } catch (Exception e) {
             LOG.error("ERROR:" + e);
         }
@@ -571,6 +692,22 @@ public class LimsManifestService {
         return (int) Math.ceil(totalRec / pageSize);
     }
 
+    private LocalDate parseDate(String date) {
+        return LocalDate.parse(date);
+    }
+    private String validateFeatureDate(String featureDate, String date ){
+        LocalDate today = LocalDate.now();
+        LocalDate parsedDate = parseDate(featureDate);
+        String actualDate;
+
+        if (parsedDate.isAfter(today)) {
+            actualDate = date;
+        }else{
+            actualDate = featureDate;
+        }
+
+        return actualDate;
+    }
     public AllManifestDto getSingleSampleInformationBySampleId(String sampleId) {
         String manifestSampleId = null;
         if (sampleId.contains("_")) {
@@ -634,9 +771,9 @@ public class LimsManifestService {
                 allManifestDto.setPcrLabSampleNumber(limsResult.getPcrLabSampleNumber());
                 allManifestDto.setVisitDate(limsResult.getVisitDate());
                 allManifestDto.setDateSampleReceivedAtPcrLab(limsResult.getDateSampleReceivedAtPcrLab());
-                allManifestDto.setResultDate(limsResult.getResultDate());
+                allManifestDto.setResultDate(validateFeatureDate(limsResult.getResultDate(), limsResult.getApprovalDate()));
                 allManifestDto.setTestResult(limsResult.getTestResult());
-                allManifestDto.setAssayDate(limsResult.getAssayDate());
+                allManifestDto.setAssayDate(validateFeatureDate(limsResult.getAssayDate(), limsResult.getDateResultDispatched()));
                 allManifestDto.setApprovalDate(limsResult.getApprovalDate());
                 allManifestDto.setDateResultDispatched(limsResult.getDateResultDispatched());
                 allManifestDto.setSampleStatus(limsResult.getSampleStatus());

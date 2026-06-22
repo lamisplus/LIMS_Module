@@ -119,6 +119,14 @@ const CreateAManifest = (props) => {
     props.setPrevious(status);
   };
 
+  const getDatimCode = (data) => {
+    const identifiers = data.organisationUnitIdentifiers;
+
+    const datim = identifiers.find((item) => item.name === "DATIM_ID");
+
+    return datim?.code;
+  };
+
   const getFacilityDatim = useCallback(async () => {
     try {
       let org_unit = JSON.parse(localStorage.getItem("user_account"));
@@ -128,13 +136,17 @@ const CreateAManifest = (props) => {
         `${url}organisation-units/v2/${facilityId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       if (response.status === 200) {
-        const { organisationUnitIdentifiers, name } = response.data;
+        const datim = getDatimCode(response.data);
+        const { name } = response.data;
+
+        console.log(datim);
+
         setDatim({
-          datimCode: organisationUnitIdentifiers[0].code,
+          datimCode: datim,
           facilityName: name,
         });
       }
@@ -323,7 +335,7 @@ const CreateAManifest = (props) => {
 
             const timer = setInterval(() => {
               handleProgress((prevProgress) =>
-                prevProgress >= 100 ? 100 : prevProgress + 2
+                prevProgress >= 100 ? 100 : prevProgress + 2,
               );
             }, 500);
 
