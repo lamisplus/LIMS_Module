@@ -42,7 +42,7 @@ public class LabSampleRepositoryImpl implements LabSampleRepositoryCustom {
         countSql.append("INNER JOIN laboratory_labtest d ON b.lab_test_id = d.id ");
         countSql.append("INNER JOIN laboratory_sample_type e ON c.sample_type_id = e.id ");
         countSql.append("INNER JOIN patient_person p ON p.id = a.patient_id ");
-        countSql.append("INNER JOIN hiv_enrollment en ON en.person_uuid = p.uuid ");
+        countSql.append("INNER JOIN hiv_enrollment_commencement en ON en.person_uuid = p.uuid ");
         countSql.append("LEFT JOIN base_application_codeset f ON b.viral_load_indication = f.id ");
         countSql.append("WHERE d.lab_test_name = 'Viral Load' AND a.facility_id = ?1 AND b.lab_test_order_status IN (1, 2, 3) AND c.sample_number NOT IN (SELECT sample_id FROM lims_sample) ");
         StringBuilder sql = new StringBuilder();
@@ -82,7 +82,7 @@ public class LabSampleRepositoryImpl implements LabSampleRepositoryCustom {
                 .append("INNER JOIN laboratory_labtest d ON b.lab_test_id = d.id ")
                 .append("INNER JOIN laboratory_sample_type e ON c.sample_type_id = e.id ")
                 .append("INNER JOIN patient_person p ON p.id = a.patient_id ")
-                .append("INNER JOIN hiv_enrollment en ON en.person_uuid = p.uuid ")
+                .append("INNER JOIN hiv_enrollment_commencement en ON en.person_uuid = p.uuid ")
                 .append("LEFT JOIN base_application_codeset f ON b.viral_load_indication = f.id ")
                 .append("WHERE d.lab_test_name = 'Viral Load' ")
                 .append("  AND a.facility_id = ?1 ")
