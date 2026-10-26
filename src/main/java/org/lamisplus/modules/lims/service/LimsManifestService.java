@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.zookeeper.proto.ErrorResponse;
 import org.jetbrains.annotations.Nullable;
 import org.lamisplus.modules.base.domain.dto.PageDTO;
 import org.lamisplus.modules.base.domain.entities.OrganisationUnit;
@@ -37,7 +36,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -74,15 +72,12 @@ public class LimsManifestService {
             try {
                 FacilityDATIMCode = Objects.requireNonNull(organisationUnit.getOrganisationUnitIdentifiers().stream()
                         .filter(x -> "DATIM_ID".equals(x.getName())).findFirst().orElse(null)).getCode();
-            } catch (Exception ignored) {
+            } catch (Exception ignored) {}
 
-            }
             try {
                 FacilityMFLCode = Objects.requireNonNull(organisationUnit.getOrganisationUnitIdentifiers().stream()
                         .filter(x -> "MFL_ID".equals(x.getName())).findFirst().orElse(null)).getCode();
-            } catch (Exception ignored) {
-
-            }
+            } catch (Exception ignored) {}
 
             manifest.setManifestID(GenerateManifestID(FacilityDATIMCode));
             manifest.setSendingFacilityID(FacilityDATIMCode);
@@ -95,19 +90,20 @@ public class LimsManifestService {
             for (LIMSSample sample : manifest.getSampleInformation()) {
                 sample.setUuid(UUID.randomUUID().toString());
                 JsonNode patientIDs = sample.getPatientID();
-                String testID = null;
+                String testID;
 
                 if (patientIDs != null && patientIDs.isArray()) {
                     for (int i = 0; i < patientIDs.size(); i++) {
                         JsonNode entry = patientIDs.get(i);
                         if ("CLIENTID".equals(entry.path("idTypeCode").asText())) {
                             testID = entry.path("idNumber").asText();
-                            sample.setTestID(Integer.valueOf(testID));
+                            if (testID != null && !testID.trim().isEmpty()) {
+                                sample.setTestID(Integer.valueOf(testID));
+                            }
                             break;
                         }
                     }
                 }
-
             }
         }
 
@@ -194,26 +190,24 @@ public class LimsManifestService {
         RestTemplate restTemplate = GetRestTemplate();
         HttpHeaders headers = GetHTTPHeaders();
         LIMSConfig config = limsConfigRepository.findById(configId).orElse(null);
-//        LogInfo("CONFIG", config);
 
-        //Login to LIMS
         assert config != null;
+        // 1. Login to LIMS defensively
         LIMSLoginResponseDTO loginResponseDTO = LoginToLIMS(restTemplate, headers, config);
 
-        //Post request
+        // 2. Post manifest request defensively
         LIMSManifestResponseDTO response = PostManifestRequest(restTemplate, headers, loginResponseDTO, id, config, request);
 
-        //Update manifest status
+        // 3. Update manifest status locally
         LIMSManifest dto = limsManifestRepository.findById(id).orElse(null);
-//        LogInfo("SUBMITTED MANIFEST", dto);
         assert dto != null;
         dto.setManifestStatus("Submitted");
 
         if (request != null) {
             dto.setSendingFacilityID(request.getDatimCode());
             dto.setSendingFacilityName(request.getFacilityName());
-        }else{
-            if (config.getTestFacilityDATIMCode().length() > 1) {
+        } else {
+            if (config.getTestFacilityDATIMCode() != null && config.getTestFacilityDATIMCode().length() > 1) {
                 dto.setSendingFacilityID(config.getTestFacilityDATIMCode());
                 dto.setSendingFacilityName(config.getTestFacilityName());
             }
@@ -225,25 +219,25 @@ public class LimsManifestService {
     }
 
     public RestTemplate GetRestTemplate() {
-    RestTemplate restTemplate = new RestTemplate();
+        RestTemplate restTemplate = new RestTemplate();
 
-    for (HttpMessageConverter<?> converter : restTemplate.getMessageConverters()) {
-        if (converter instanceof MappingJackson2HttpMessageConverter) {
-            MappingJackson2HttpMessageConverter jacksonConverter =
-                    (MappingJackson2HttpMessageConverter) converter;
+        for (HttpMessageConverter<?> converter : restTemplate.getMessageConverters()) {
+            if (converter instanceof MappingJackson2HttpMessageConverter) {
+                MappingJackson2HttpMessageConverter jacksonConverter =
+                        (MappingJackson2HttpMessageConverter) converter;
 
-            List<MediaType> mediaTypes = new ArrayList<>(jacksonConverter.getSupportedMediaTypes());
-            mediaTypes.add(MediaType.TEXT_HTML);
-            mediaTypes.add(MediaType.APPLICATION_OCTET_STREAM);
-            mediaTypes.add(MediaType.ALL);
-            jacksonConverter.setSupportedMediaTypes(mediaTypes);
+                List<MediaType> mediaTypes = new ArrayList<>(jacksonConverter.getSupportedMediaTypes());
+                mediaTypes.add(MediaType.TEXT_HTML);
+                mediaTypes.add(MediaType.APPLICATION_OCTET_STREAM);
+                mediaTypes.add(MediaType.ALL);
+                jacksonConverter.setSupportedMediaTypes(mediaTypes);
+            }
         }
+
+        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
+
+        return restTemplate;
     }
-
-    restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
-
-    return restTemplate;
-}
 
     private LIMSLoginResponseDTO LoginToLIMS(RestTemplate restTemplate, HttpHeaders headers, LIMSConfig config) {
         LIMSLoginRequestDTO loginRequestDTO = new LIMSLoginRequestDTO();
@@ -251,15 +245,28 @@ public class LimsManifestService {
         loginRequestDTO.setPassword(config.getConfigPassword());
 
         HttpEntity<LIMSLoginRequestDTO> loginEntity = new HttpEntity<>(loginRequestDTO, headers);
-        ResponseEntity<LIMSLoginResponseDTO> loginResponse = restTemplate.exchange(config.getServerUrl() + loginUrl, HttpMethod.POST, loginEntity, LIMSLoginResponseDTO.class);
-//        LogInfo("LOGIN_RESPONSE", loginResponse.getBody());
 
-        return loginResponse.getBody();
+        try {
+            ResponseEntity<String> rawResponse = restTemplate.exchange(
+                    config.getServerUrl() + loginUrl,
+                    HttpMethod.POST,
+                    loginEntity,
+                    String.class
+            );
+
+            String jsonPart = extractAndValidateJsonResponse(rawResponse.getBody());
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            return mapper.readValue(jsonPart, LIMSLoginResponseDTO.class);
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to login to LIMS server: " + ex.getMessage(), ex);
+        }
     }
 
     private HttpHeaders GetHTTPHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.TEXT_HTML, MediaType.ALL));
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add("user-agent", "Application");
         return headers;
@@ -271,8 +278,8 @@ public class LimsManifestService {
         if (request != null) {
             manifest.setSendingFacilityID(request.getDatimCode());
             manifest.setSendingFacilityName(request.getFacilityName());
-        }else {
-            if (config.getTestFacilityDATIMCode().length() > 1) {
+        } else {
+            if (config.getTestFacilityDATIMCode() != null && config.getTestFacilityDATIMCode().length() > 1) {
                 manifest.setSendingFacilityID(config.getTestFacilityDATIMCode());
                 manifest.setSendingFacilityName(config.getTestFacilityName());
             }
@@ -282,13 +289,29 @@ public class LimsManifestService {
         assert loginResponseDTO != null;
         requestDTO.setToken(loginResponseDTO.getJwt());
         requestDTO.setViralLoadManifest(manifest);
-//        LogInfo("MANIFEST_REQUEST", requestDTO);
+        LogInfo("MANIFEST_REQUEST", requestDTO);
 
         HttpEntity<LIMSManifestRequestDTO> manifestEntity = new HttpEntity<>(requestDTO, headers);
-        ResponseEntity<LIMSManifestResponseDTO> manifestResponse = restTemplate.exchange(config.getServerUrl() + manifestUrl, HttpMethod.POST, manifestEntity, LIMSManifestResponseDTO.class);
-//        LogInfo("MANIFEST_RESPONSE", manifestResponse.getBody());
 
-        return manifestResponse.getBody();
+        try {
+            ResponseEntity<String> rawResponse = restTemplate.exchange(
+                    config.getServerUrl() + manifestUrl,
+                    HttpMethod.POST,
+                    manifestEntity,
+                    String.class
+            );
+
+            String jsonPart = extractAndValidateJsonResponse(rawResponse.getBody());
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            LIMSManifestResponseDTO responseDTO = mapper.readValue(jsonPart, LIMSManifestResponseDTO.class);
+            LogInfo("MANIFEST_RESPONSE", responseDTO);
+            return responseDTO;
+
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to post manifest to LIMS server: " + ex.getMessage(), ex);
+        }
     }
 
     private LIMSResultsResponseDTO GetResultsRequest(
@@ -319,87 +342,64 @@ public class LimsManifestService {
                     String.class
             );
 
-            String responseBody = rawResponse.getBody();
-
             if (!rawResponse.getStatusCode().is2xxSuccessful()) {
                 throw new RuntimeException("LIMS server returned non-success HTTP status: " + rawResponse.getStatusCode());
             }
 
-            if (responseBody == null || responseBody.trim().isEmpty()) {
-                throw new RuntimeException("Empty response received from LIMS server.");
-            }
-
-            if (responseBody.contains("\"status\":\"error\"") ||
-                    responseBody.contains("\"message\"")) {
-                throw new RuntimeException("LIMS returned an error response: " + responseBody);
-            }
-
-            String cleanedText = cleanJson(responseBody);
-            if (cleanedText.trim().isEmpty()) {
-                throw new RuntimeException("Failed to clean LIMS response: response is empty after cleaning.");
-            }
-
-            String jsonPart = extractJsonFromText(cleanedText);
-            if (jsonPart.trim().isEmpty()) {
-                throw new RuntimeException("Failed to extract JSON content from LIMS response.");
-            }
+            String jsonPart = extractAndValidateJsonResponse(rawResponse.getBody());
 
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-            //validate Json
             JsonNode jsonNode;
-            try{
+            try {
                 jsonNode = mapper.readTree(jsonPart);
-            }catch (JsonParseException ex) {
+            } catch (JsonParseException ex) {
                 long position = ex.getLocation().getCharOffset();
-                LOG.error(
-                        "Malformed JSON received from LIMS. Line={}, Column={}, Offset={}",
-                        ex.getLocation().getLineNr(),
-                        ex.getLocation().getColumnNr(),
-                        position);
-
+                LOG.error("Malformed JSON received from LIMS. Line={}, Column={}, Offset={}",
+                        ex.getLocation().getLineNr(), ex.getLocation().getColumnNr(), position);
                 logJsonContext(jsonPart, (int) position);
-
-                throw new RuntimeException(
-                        "LIMS returned malformed JSON. Check logs for details.",
-                        ex);
-
+                throw new RuntimeException("LIMS returned malformed JSON. Check logs for details.", ex);
             }
-            LIMSResultsResponseDTO result =
-                    mapper.treeToValue(
-                            jsonNode,
-                            LIMSResultsResponseDTO.class);
 
-            //LIMSResultsResponseDTO result = mapper.readValue(jsonPart, LIMSResultsResponseDTO.class);
-
+            LIMSResultsResponseDTO result = mapper.treeToValue(jsonNode, LIMSResultsResponseDTO.class);
             if (result == null) {
                 throw new RuntimeException("Parsed LIMS result is null after deserialization.");
             }
-
             return result;
 
         } catch (HttpStatusCodeException ex) {
             String errorBody = ex.getResponseBodyAsString();
-            throw new RuntimeException(String.format(
-                    "HTTP error from LIMS: Status %s, Body: %s",
-                    ex.getStatusCode(),
-                    errorBody
-            ), ex);
-
-        } catch (JsonProcessingException ex) {
-            throw new RuntimeException("Failed to parse LIMS JSON response: invalid JSON format", ex);
-
+            throw new RuntimeException(String.format("HTTP error from LIMS: Status %s, Body: %s", ex.getStatusCode(), errorBody), ex);
         } catch (Exception ex) {
             throw new RuntimeException("Unexpected error while requesting LIMS results: " + ex.getMessage(), ex);
         }
     }
 
-    private void logJsonContext(String json, int position) {
+    /**
+     * Centralized utility method to extract clean JSON object payload from raw text/HTML mixed output.
+     */
+    private String extractAndValidateJsonResponse(String responseBody) {
+        if (responseBody == null || responseBody.trim().isEmpty()) {
+            throw new RuntimeException("Empty response received from LIMS server.");
+        }
 
+        String cleanedText = cleanJson(responseBody);
+        if (cleanedText.trim().isEmpty()) {
+            throw new RuntimeException("Failed to clean LIMS response: response is empty after cleaning.");
+        }
+
+        String jsonPart = extractJsonFromText(cleanedText);
+        if (jsonPart.trim().isEmpty()) {
+            throw new RuntimeException("Failed to extract JSON content from LIMS response.");
+        }
+
+        return jsonPart;
+    }
+
+    private void logJsonContext(String json, int position) {
         int start = Math.max(0, position - 300);
         int end = Math.min(json.length(), position + 300);
-
         String snippet = json.substring(start, end);
 
         LOG.error("========== JSON ERROR CONTEXT ==========");
@@ -407,7 +407,6 @@ public class LimsManifestService {
         LOG.error(snippet);
         LOG.error("========================================");
     }
-
 
     private String cleanJson(String rawJson) {
         if (rawJson == null) {
@@ -417,7 +416,7 @@ public class LimsManifestService {
     }
 
     /**
-     * Extracts JSON object from a text that may have leading/trailing notices or HTML.
+     * Extracts JSON object/array from text containing leading/trailing PHP warnings or HTML wrappers.
      */
     private String extractJsonFromText(String text) {
         int startIndex = text.indexOf('{');
@@ -433,7 +432,7 @@ public class LimsManifestService {
     }
 
     public Optional<LIMSSampleProjection> getSampleByTestId(int testId, String id) {
-            return limsManifestRepository.findLIMSSampleBySampleIDAndTestID(testId, id);
+        return limsManifestRepository.findLIMSSampleBySampleIDAndTestID(testId, id);
     }
 
     public Optional<LIMSSampleProjection> getSampleById(String id) {
@@ -445,51 +444,21 @@ public class LimsManifestService {
         HttpHeaders headers = GetHTTPHeaders();
         LIMSConfig config = limsConfigRepository.findById(configId).orElse(null);
 
-        //Login to LIMS
         assert config != null;
         LIMSLoginResponseDTO loginResponseDTO = LoginToLIMS(restTemplate, headers, config);
-
-        //Get results
         LIMSResultsResponseDTO response = GetResultsRequest(restTemplate, headers, loginResponseDTO, id, config);
-        //LOG.info("RESPONSE2:"+response);
 
         try {
             List<LIMSResultDTO> viralLoadTestReport = response.getViralLoadTestReport();
-            String manifestID = response.getManifestID();
-            Integer manifestId = limsManifestRepository.getManifestId(manifestID).get(0);
-            List<LIMSResult> limsResults = resultRepository.getLIMSResultByManifestId(manifestId);
+            if (viralLoadTestReport == null) {
+                LOG.warn("Viral load test report list is null for manifest ID: {}", id);
+                return response;
+            }
 
             LocalDate today = LocalDate.now();
-
-//            if (limsResults.size() < viralLoadTestReport.size()) {
-//                System.out.println(" Starting to save result in db--");
-//                for (LIMSResultDTO result : viralLoadTestReport) {
-//                    result.setManifestRecordID(id);
-//                    JsonNode patientIDs = result.getPatientID();
-//                    String testID = null;
-//                    if (patientIDs != null && patientIDs.isArray()) {
-//                        for (int i = 0; i < patientIDs.size(); i++) {
-//                            JsonNode entry = patientIDs.get(i);
-//                            if ("CLIENTID".equals(entry.path("idTypeCode").asText())) {
-//                                testID = entry.path("idNumber").asText();
-//                                if ((testID != null) && !testID.trim().isEmpty()) {
-//                                    result.setTestID(Integer.valueOf(testID));
-//                                    break;
-//                                }
-//
-//                            }
-//                        }
-//                    }
-//                    String hospitalNumber = getHospitalNumber(patientIDs);
-////                    System.out.println(result.toString());
-//                    resultService.Save(limsMapper.toResult(result), hospitalNumber);
-//                }
-//            }
-
             LOG.info("Starting to save/update results in DB...");
 
             for (LIMSResultDTO result : viralLoadTestReport) {
-
                 result.setManifestRecordID(id);
 
                 JsonNode patientIDs = result.getPatientID();
@@ -498,10 +467,8 @@ public class LimsManifestService {
                 if (patientIDs != null && patientIDs.isArray()) {
                     for (int i = 0; i < patientIDs.size(); i++) {
                         JsonNode entry = patientIDs.get(i);
-
                         if ("CLIENTID".equals(entry.path("idTypeCode").asText())) {
                             testID = entry.path("idNumber").asText();
-
                             if (testID != null && !testID.trim().isEmpty()) {
                                 result.setTestID(Integer.valueOf(testID));
                                 break;
@@ -511,59 +478,47 @@ public class LimsManifestService {
                 }
 
                 String hospitalNumber = getHospitalNumber(patientIDs);
-                // Find existing result
+                if (result.getTestID() == null) {
+                    LOG.warn("Skipping result persistence: Test ID could not be resolved for sample.");
+                    continue;
+                }
+
                 Optional<LIMSResult> existingResultOpt =
-                        resultRepository.findByManifestRecordIDAndTestID(
-                                id,
-                                result.getTestID()
-                        );
+                        resultRepository.findByManifestRecordIDAndTestID(id, result.getTestID());
 
                 if (existingResultOpt.isPresent()) {
-
                     LIMSResult existingResult = existingResultOpt.get();
-
                     boolean shouldUpdate = false;
 
-                    LocalDate parsedAssayDate = parseDate(existingResult.getAssayDate());
-                    // Compare assay date
-                    if (!Objects.equals(existingResult.getAssayDate(),
-                            result.getAssayDate()) || parsedAssayDate.isAfter(today)) {
-                        shouldUpdate = true;
+                    if (existingResult.getAssayDate() != null) {
+                        LocalDate parsedAssayDate = parseDate(existingResult.getAssayDate());
+                        if (!Objects.equals(existingResult.getAssayDate(), result.getAssayDate()) || parsedAssayDate.isAfter(today)) {
+                            shouldUpdate = true;
+                        }
                     }
 
-                    LocalDate parsedResultDate = parseDate(existingResult.getResultDate());
-                    // Compare result date
-                    if (!Objects.equals(existingResult.getResultDate(),
-                            result.getResultDate()) || parsedResultDate.isAfter(today)) {
-                        shouldUpdate = true;
+                    if (existingResult.getResultDate() != null) {
+                        LocalDate parsedResultDate = parseDate(existingResult.getResultDate());
+                        if (!Objects.equals(existingResult.getResultDate(), result.getResultDate()) || parsedResultDate.isAfter(today)) {
+                            shouldUpdate = true;
+                        }
                     }
 
                     if (shouldUpdate) {
                         LIMSResult updatedResult = limsMapper.toResult(result);
-
                         updatedResult.setId(existingResult.getId());
-
                         resultService.Save(updatedResult, hospitalNumber);
-
-                        LOG.info(
-                                "Updated result for Test ID: "
-                                        + result.getTestID());
+                        LOG.info("Updated result for Test ID: " + result.getTestID());
                     }
 
                 } else {
-
-                    resultService.Save(
-                            limsMapper.toResult(result),
-                            hospitalNumber);
-
-                    LOG.info(
-                            "Saved new result for Test ID: "
-                                    + result.getTestID());
+                    resultService.Save(limsMapper.toResult(result), hospitalNumber);
+                    LOG.info("Saved new result for Test ID: " + result.getTestID());
                 }
             }
 
         } catch (Exception e) {
-            LOG.error("ERROR:" + e);
+            LOG.error("ERROR saving downloaded results:" + e.getMessage(), e);
         }
 
         return response;
@@ -571,7 +526,7 @@ public class LimsManifestService {
 
     private static String getHospitalNumber(JsonNode patientIdNode) {
         if (patientIdNode == null || !patientIdNode.isArray()) {
-            return null; // Or throw an exception, depending on your error handling
+            return null;
         }
 
         for (JsonNode idEntry : patientIdNode) {
@@ -579,13 +534,12 @@ public class LimsManifestService {
                 JsonNode idTypeCodeNode = idEntry.get("idTypeCode");
                 JsonNode idNumberNode = idEntry.get("idNumber");
 
-                if (idTypeCodeNode != null && idTypeCodeNode.asText().equals("HOSPITALNO") &&
+                if (idTypeCodeNode != null && "HOSPITALNO".equals(idTypeCodeNode.asText()) &&
                         idNumberNode != null) {
                     return idNumberNode.asText();
                 }
             }
         }
-
         return null;
     }
 
@@ -598,14 +552,12 @@ public class LimsManifestService {
         ArrayList<AllManifestDto> allManifestDtoArrayList = new ArrayList<>();
         Pageable paging = PageRequest.of(pageNo, pageSize, Sort.by("id").descending());
         List<LIMSManifest> limsManifestList = this.limsManifestRepository.findAllByFacilityId(getCurrentUserOrganization(), paging).getContent();
-        Iterator it1 = limsManifestList.listIterator();
-        while (it1.hasNext()) {
-            LIMSManifest limsManifest = (LIMSManifest) it1.next();
+
+        for (LIMSManifest limsManifest : limsManifestList) {
             int manifestId = limsManifest.getId();
             List<LIMSSample> limsSampleList = this.sampleRepository.findAllByManifestRecordID(manifestId);
-            Iterator it2 = limsSampleList.listIterator();
-            while (it2.hasNext()) {
-                LIMSSample limsSample = (LIMSSample) it2.next();
+
+            for (LIMSSample limsSample : limsSampleList) {
                 AllManifestDto allManifestDto = new AllManifestDto();
                 allManifestDto.setLocalManifestId(limsManifest.getId());
                 allManifestDto.setManifestID(limsManifest.getManifestID());
@@ -659,7 +611,6 @@ public class LimsManifestService {
                     allManifestDto.setDateResultDispatched(limsResult.getDateResultDispatched());
                     allManifestDto.setSampleStatus(limsResult.getSampleStatus());
                     allManifestDto.setSampleTestable(limsResult.getSampleTestable());
-
                     allManifestDto.setTransferStatus(limsResult.getTransferStatus());
                     allManifestDto.setTestedBy(limsResult.getTestedBy());
                     allManifestDto.setApprovedBy(limsResult.getApprovedBy());
@@ -668,16 +619,14 @@ public class LimsManifestService {
                     allManifestDto.setOtherRejectionReason(limsResult.getOtherRejectionReason());
                     allManifestDto.setSendingPcrLabID(limsResult.getSendingPcrLabID());
                     allManifestDto.setSendingPcrLabName(limsResult.getSendingPcrLabName());
-
-
-                } else allManifestDto.setResultIsBack(Boolean.FALSE);
+                } else {
+                    allManifestDto.setResultIsBack(Boolean.FALSE);
+                }
 
                 allManifestDtoArrayList.add(allManifestDto);
-
             }
-
-
         }
+
         PersonMetaDataDto personMetaDataDto = new PersonMetaDataDto();
         personMetaDataDto.setTotalRecords(allManifestDtoArrayList.size());
         personMetaDataDto.setPageSize(pageSize);
@@ -685,44 +634,41 @@ public class LimsManifestService {
         personMetaDataDto.setCurrentPage(pageNo);
         personMetaDataDto.setRecords(allManifestDtoArrayList);
         return personMetaDataDto;
-
     }
 
     public int getTotalPages(int totalRec, int pageSize) {
-        return (int) Math.ceil(totalRec / pageSize);
+        if (pageSize <= 0) return 0;
+        return (int) Math.ceil((double) totalRec / pageSize);
     }
 
     private LocalDate parseDate(String date) {
         return LocalDate.parse(date);
     }
-    private String validateFeatureDate(String featureDate, String date ){
+
+    private String validateFeatureDate(String featureDate, String date) {
         LocalDate today = LocalDate.now();
         LocalDate parsedDate = parseDate(featureDate);
-        String actualDate;
-
         if (parsedDate.isAfter(today)) {
-            actualDate = date;
-        }else{
-            actualDate = featureDate;
+            return date;
         }
-
-        return actualDate;
+        return featureDate;
     }
+
     public AllManifestDto getSingleSampleInformationBySampleId(String sampleId) {
-        String manifestSampleId = null;
+        String manifestSampleId;
         if (sampleId.contains("_")) {
             manifestSampleId = sampleId.replace("_", "/");
         } else {
             manifestSampleId = sampleId;
         }
+
         AllManifestDto allManifestDto = new AllManifestDto();
         Optional<LIMSSample> limsSamples = sampleRepository.findLIMSSampleBySampleID(manifestSampleId);
+
         if (limsSamples.isPresent()) {
-//            System.out.println(" in A--");
             LIMSSample limsSample = limsSamples.get();
             Optional<LIMSManifest> limsManifests = limsManifestRepository.findById(limsSample.getManifestRecordID());
             if (limsManifests.isPresent()) {
-//                System.out.println(" in B--");
                 LIMSManifest limsManifest = limsManifests.get();
                 allManifestDto.setLocalManifestId(limsManifest.getId());
                 allManifestDto.setManifestID(limsManifest.getManifestID());
@@ -764,7 +710,6 @@ public class LimsManifestService {
 
             Optional<LIMSResult> limsResults = this.resultRepository.getLIMSResultBySampleID(limsSample.getSampleID());
             if (limsResults.isPresent()) {
-//                System.out.println(" in C--");
                 allManifestDto.setResultIsBack(Boolean.TRUE);
                 LIMSResult limsResult = limsResults.get();
                 allManifestDto.setLocalResultId(limsResult.getId());
@@ -778,7 +723,6 @@ public class LimsManifestService {
                 allManifestDto.setDateResultDispatched(limsResult.getDateResultDispatched());
                 allManifestDto.setSampleStatus(limsResult.getSampleStatus());
                 allManifestDto.setSampleTestable(limsResult.getSampleTestable());
-
                 allManifestDto.setTransferStatus(limsResult.getTransferStatus());
                 allManifestDto.setTestedBy(limsResult.getTestedBy());
                 allManifestDto.setApprovedBy(limsResult.getApprovedBy());
@@ -787,9 +731,9 @@ public class LimsManifestService {
                 allManifestDto.setOtherRejectionReason(limsResult.getOtherRejectionReason());
                 allManifestDto.setSendingPcrLabID(limsResult.getSendingPcrLabID());
                 allManifestDto.setSendingPcrLabName(limsResult.getSendingPcrLabName());
-
-            } else allManifestDto.setResultIsBack(Boolean.FALSE);
-
+            } else {
+                allManifestDto.setResultIsBack(Boolean.FALSE);
+            }
         }
 
         return allManifestDto;
