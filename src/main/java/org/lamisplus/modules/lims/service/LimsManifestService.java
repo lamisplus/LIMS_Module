@@ -54,6 +54,7 @@ public class LimsManifestService {
     private final UserService userService;
     private final LimsResultService resultService;
     private final LimsConfigRepository limsConfigRepository;
+    private final LimsConfigService limsConfigService;
 
     String loginUrl = "/login.php";
     String manifestUrl = "/samples/create.php";
@@ -272,12 +273,27 @@ public class LimsManifestService {
         return headers;
     }
 
-    private LIMSManifestResponseDTO PostManifestRequest(RestTemplate restTemplate, HttpHeaders headers, LIMSLoginResponseDTO loginResponseDTO, int ManifestId, LIMSConfig config, FacilityRequest request) {
+    private LIMSManifestResponseDTO PostManifestRequest(RestTemplate restTemplate, HttpHeaders headers, LIMSLoginResponseDTO loginResponseDTO,
+                                                        int ManifestId, LIMSConfig config, FacilityRequest request) {
         LIMSManifestDTO manifest = limsMapper.toLimsManifestDto(findById(ManifestId));
 
         if (request != null) {
             manifest.setSendingFacilityID(request.getDatimCode());
             manifest.setSendingFacilityName(request.getFacilityName());
+            LOG.info("Datim codes: {} : {}", config.getTestFacilityDATIMCode(), request.getDatimCode());
+            if (!Objects.equals(config.getTestFacilityDATIMCode(), request.getDatimCode())){
+                ConfigDTO updateConfig = new ConfigDTO();
+                LOG.info("Updating config..");
+                updateConfig.setConfigName(config.getConfigName());
+                updateConfig.setConfigEmail(config.getConfigEmail());
+                updateConfig.setConfigPassword(config.getConfigPassword());
+                updateConfig.setServerUrl(config.getServerUrl());
+                updateConfig.setTestFacilityDATIMCode(request.getDatimCode());
+                updateConfig.setTestFacilityName(request.getFacilityName());
+
+                limsConfigService.Update(updateConfig, config.getId());
+            }
+
         } else {
             if (config.getTestFacilityDATIMCode() != null && config.getTestFacilityDATIMCode().length() > 1) {
                 manifest.setSendingFacilityID(config.getTestFacilityDATIMCode());
@@ -289,7 +305,7 @@ public class LimsManifestService {
         assert loginResponseDTO != null;
         requestDTO.setToken(loginResponseDTO.getJwt());
         requestDTO.setViralLoadManifest(manifest);
-        LogInfo("MANIFEST_REQUEST", requestDTO);
+//        LogInfo("MANIFEST_REQUEST", requestDTO);
 
         HttpEntity<LIMSManifestRequestDTO> manifestEntity = new HttpEntity<>(requestDTO, headers);
 
@@ -306,7 +322,7 @@ public class LimsManifestService {
             mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             LIMSManifestResponseDTO responseDTO = mapper.readValue(jsonPart, LIMSManifestResponseDTO.class);
-            LogInfo("MANIFEST_RESPONSE", responseDTO);
+//            LogInfo("MANIFEST_RESPONSE", responseDTO);
             return responseDTO;
 
         } catch (Exception ex) {

@@ -129,33 +129,37 @@ const CreateAManifest = (props) => {
 
   const getFacilityDatim = useCallback(async () => {
     try {
-      let org_unit = JSON.parse(localStorage.getItem("user_account"));
-      const facilityId = org_unit.currentOrganisationUnitId;
-
-      const response = await axios.get(
-        `${url}organisation-units/v2/${facilityId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const response = await axios.get(`${url}account`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.status === 200) {
-        const datim = getDatimCode(response.data);
-        const { name } = response.data;
+        const accountData = response.data;
+        const currentOrgUnitId = accountData.currentOrganisationUnitId;
+        const orgUnits = accountData.applicationUserOrganisationUnits || [];
 
-        console.log(datim);
+        const matchedUnit = orgUnits.find(
+          (unit) => unit.organisationUnitId === currentOrgUnitId,
+        );
 
-        setDatim({
-          datimCode: datim,
-          facilityName: name,
-        });
+        if (matchedUnit) {
+          setDatim({
+            datimCode: matchedUnit.datimId,
+            facilityName: matchedUnit.organisationUnitName,
+          });
+        } else {
+          setDatim({
+            datimCode: null,
+            facilityName: accountData.currentOrganisationUnitName || "",
+          });
+        }
       }
     } catch (e) {
-      toast.error("An error occurred while fetching facility datim", {
+      toast.error("An error occurred while fetching account details", {
         position: toast.POSITION.TOP_RIGHT,
       });
     }
-  }, []);
+  }, [url, token]);
 
   const loadConfig = useCallback(async () => {
     try {
