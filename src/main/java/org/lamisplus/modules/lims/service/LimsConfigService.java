@@ -33,13 +33,15 @@ public class LimsConfigService {
             return limsMapper.toConfigDto(limsConfigRepository.save(config));
         }
     }
-    public ConfigDTO Update(ConfigDTO configDTO, int id) throws Exception {
+    public ConfigDTO Update(ConfigDTO configDTO, int id) {
         if(FindById(id) != null) {
+            LOG.info("Config updated..");
             return limsMapper.toConfigDto(limsConfigRepository.save(limsMapper.toConfig(configDTO)));
         }
         else {
-            throw new Exception(id + " not found");
+            LOG.info(id + "config id not found");
         }
+        return configDTO;
     }
 
     public ConfigDTO FindById(Integer id){
