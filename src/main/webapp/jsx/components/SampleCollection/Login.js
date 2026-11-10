@@ -340,40 +340,39 @@ const Login = (props) => {
                         ""
                       )}
                     </FormGroup>
+                    {demo === true ? (
+                      <>
+                        <FormGroup>
+                          <Label
+                            for="testFacilityName"
+                            className={classes.label}
+                          >
+                            Facility Name
+                          </Label>
+                          <select
+                            className="form-control"
+                            name="testFacilityName"
+                            id="testFacilityName"
+                            onChange={handleChange}
+                            style={{
+                              border: "1px solid #014d88",
+                              borderRadius: "0px",
+                              fontSize: "14px",
+                              color: "#000",
+                            }}
+                          >
+                            <option value={""}></option>
+                            {facilities.map((value) => (
+                              <option
+                                key={value.id}
+                                value={value.organisationUnitName}
+                              >
+                                {value.organisationUnitName}
+                              </option>
+                            ))}
+                          </select>
 
-                    {demo === true
-                      ? // <>
-                        //   <FormGroup>
-                        //     <Label
-                        //       for="testFacilityName"
-                        //       className={classes.label}
-                        //     >
-                        //       Facility Name
-                        //     </Label>
-                        //     <select
-                        //       className="form-control"
-                        //       name="testFacilityName"
-                        //       id="testFacilityName"
-                        //       onChange={handleChange}
-                        //       style={{
-                        //         border: "1px solid #014d88",
-                        //         borderRadius: "0px",
-                        //         fontSize: "14px",
-                        //         color: "#000",
-                        //       }}
-                        //     >
-                        //       <option value={""}></option>
-                        //       {facilities.map((value) => (
-                        //         <option
-                        //           key={value.id}
-                        //           value={value.organisationUnitName}
-                        //         >
-                        //           {value.organisationUnitName}
-                        //         </option>
-                        //       ))}
-                        //     </select>
-
-                        //     {/* <Input
+                          {/* <Input
                         //       type="text"
                         //       name="testFacilityName"
                         //       id="testFacilityName"
@@ -382,28 +381,29 @@ const Login = (props) => {
                         //       onChange={handleChange}
                         //       value={login.testFacilityName}
                         //     /> */}
-                        //   </FormGroup>
-                        //   <FormGroup>
-                        //     <Label
-                        //       for="testFacilityDATIMCode"
-                        //       className={classes.label}
-                        //     >
-                        //       Facility Datim Code
-                        //     </Label>
+                        </FormGroup>
+                        <FormGroup>
+                          <Label
+                            for="testFacilityDATIMCode"
+                            className={classes.label}
+                          >
+                            Facility Datim Code
+                          </Label>
 
-                        //     <Input
-                        //       type="text"
-                        //       name="testFacilityDATIMCode"
-                        //       id="testFacilityDATIMCode"
-                        //       placeholder="Testing Facility Datim Code"
-                        //       className={classes.input}
-                        //       onChange={handleChange}
-                        //       value={login.testFacilityDATIMCode}
-                        //     />
-                        //   </FormGroup>
-                        // </>
-                        ""
-                      : ""}
+                          <Input
+                            type="text"
+                            name="testFacilityDATIMCode"
+                            id="testFacilityDATIMCode"
+                            placeholder="Testing Facility Datim Code"
+                            className={classes.input}
+                            onChange={handleChange}
+                            value={login.testFacilityDATIMCode}
+                          />
+                        </FormGroup>
+                      </>
+                    ) : (
+                      ""
+                    )}
                     <Button
                       variant="contained"
                       color="primary"

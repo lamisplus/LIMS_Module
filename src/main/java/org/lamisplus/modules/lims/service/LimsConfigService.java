@@ -7,7 +7,9 @@ import org.lamisplus.modules.lims.domain.entity.LIMSConfig;
 import org.lamisplus.modules.lims.domain.mapper.LimsMapper;
 import org.lamisplus.modules.lims.repository.LimsConfigRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -15,43 +17,68 @@ import java.util.UUID;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class LimsConfigService {
+
+
     private final LimsConfigRepository limsConfigRepository;
     private final LimsMapper limsMapper;
 
-    public ConfigDTO Save(ConfigDTO configDTO) throws Exception {
+    @Transactional
+    public ConfigDTO save(ConfigDTO configDTO) {
         List<LIMSConfig> configs = limsConfigRepository.findAll();
+
+        if (!configs.isEmpty()) {
+            Integer existingId = configs.get(0).getId();
+            return update(configDTO, existingId);
+        }
+
         LIMSConfig config = limsMapper.toConfig(configDTO);
         config.setUuid(UUID.randomUUID().toString());
         config.setCreateDate(LocalDateTime.now());
 
-        if(configs.size()>0){
-            configDTO.setId(configs.get(0).getId());
-            return Update(configDTO, config.getId());
-        }
-        else{
-            return limsMapper.toConfigDto(limsConfigRepository.save(config));
-        }
+        LIMSConfig savedConfig = limsConfigRepository.save(config);
+
+        return limsMapper.toConfigDto(savedConfig);
     }
-    public ConfigDTO Update(ConfigDTO configDTO, int id) {
-        if(FindById(id) != null) {
-            LOG.info("Config updated..");
-            return limsMapper.toConfigDto(limsConfigRepository.save(limsMapper.toConfig(configDTO)));
-        }
-        else {
-            LOG.info(id + "config id not found");
-        }
-        return configDTO;
+    @Transactional
+    public ConfigDTO update(ConfigDTO configDTO, Integer id) {
+        LIMSConfig existingConfig = limsConfigRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("LIMS configuration with ID " + id + " not found."));
+
+
+        LIMSConfig configToUpdate = limsMapper.toConfig(configDTO);
+
+        configToUpdate.setId(existingConfig.getId());
+        configToUpdate.setUuid(existingConfig.getUuid());
+        configToUpdate.setCreateDate(existingConfig.getCreateDate());
+
+
+        LIMSConfig updatedConfig = limsConfigRepository.save(configToUpdate);
+
+        return limsMapper.toConfigDto(updatedConfig);
     }
 
-    public ConfigDTO FindById(Integer id){
-        return limsMapper.toConfigDto(limsConfigRepository.findById(id).orElse(null));
+    public ConfigDTO findById(Integer id) {
+        return limsConfigRepository.findById(id)
+                .map(limsMapper::toConfigDto)
+                .orElseThrow(() -> new EntityNotFoundException("LIMS configuration with ID " + id + " not found."));
     }
-    public String Delete(Integer id){
+
+    @Transactional
+    public String delete(Integer id) {
+        if (!limsConfigRepository.existsById(id)) {
+            throw new EntityNotFoundException("Cannot delete. LIMS configuration with ID " + id + " not found.");
+        }
         limsConfigRepository.deleteById(id);
-        return id+" deleted successfully";
+        return id + " deleted successfully";
     }
-    public List<ConfigDTO> FindAll(){
+
+    public List<ConfigDTO> findAll() {
         return limsMapper.toConfigDtoList(limsConfigRepository.findAll());
     }
 }
+
+
+
+

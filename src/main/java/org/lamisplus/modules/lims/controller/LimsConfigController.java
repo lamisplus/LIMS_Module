@@ -15,31 +15,31 @@ public class LimsConfigController {
 
     @PostMapping("/config")
     public ConfigDTO SaveConfig(@RequestBody ConfigDTO configDTO) throws Exception {
-        return limsConfigService.Save(configDTO);
+        return limsConfigService.save(configDTO);
     }
 
     @PutMapping("/config/{id}")
     public ConfigDTO UpdateConfig(@PathVariable int id, @RequestBody ConfigDTO configDTO) throws Exception {
-        return limsConfigService.Update(configDTO, id);
+        return limsConfigService.update(configDTO, id);
     }
 
     @DeleteMapping("/config/{id}")
     public String DeleteConfig(@PathVariable int id) throws Exception {
-        return limsConfigService.Delete(id);
+        return limsConfigService.delete(id);
     }
 
 
     @GetMapping("/config")
     public ConfigDTO GetConfig(){
-        boolean config = limsConfigService.FindAll().isEmpty();
-        if (config != true) {
-            return limsConfigService.FindAll().get(0);
+        boolean config = limsConfigService.findAll().isEmpty();
+        if (!config) {
+            return limsConfigService.findAll().get(0);
         }
         return null;
     }
 
     @GetMapping("/config/{id}")
     public ConfigDTO GetConfigById(@PathVariable int id){
-        return limsConfigService.FindById(id);
+        return limsConfigService.findById(id);
     }
 }

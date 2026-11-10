@@ -193,13 +193,11 @@ public class LimsManifestService {
         LIMSConfig config = limsConfigRepository.findById(configId).orElse(null);
 
         assert config != null;
-        // 1. Login to LIMS defensively
+
         LIMSLoginResponseDTO loginResponseDTO = LoginToLIMS(restTemplate, headers, config);
 
-        // 2. Post manifest request defensively
         LIMSManifestResponseDTO response = PostManifestRequest(restTemplate, headers, loginResponseDTO, id, config, request);
 
-        // 3. Update manifest status locally
         LIMSManifest dto = limsManifestRepository.findById(id).orElse(null);
         assert dto != null;
         dto.setManifestStatus("Submitted");
@@ -291,7 +289,7 @@ public class LimsManifestService {
                 updateConfig.setTestFacilityDATIMCode(request.getDatimCode());
                 updateConfig.setTestFacilityName(request.getFacilityName());
 
-                limsConfigService.Update(updateConfig, config.getId());
+                limsConfigService.update(updateConfig, config.getId());
             }
 
         } else {
